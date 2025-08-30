@@ -44,9 +44,9 @@ app.use((err, req, res, next) => {
   res.status(500).send('Internal server error');
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, 'localhost', () => {
   console.log(`🚀 Frontend server running on port ${PORT}`);
   console.log(`📁 Serving static files from: ${path.join(__dirname, 'dist')}`);
   console.log(`🔄 SPA routing enabled - all routes will serve index.html`);
-  console.log(`🌐 Server URL: http://localhost:${PORT}`);
+  console.log(`🌐 Local URL: http://localhost:${PORT}`);
 });

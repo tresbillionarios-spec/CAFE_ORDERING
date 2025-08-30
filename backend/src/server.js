@@ -31,7 +31,9 @@ const allowedOrigins = [
   'http://192.168.1.9:5173',
   'http://127.0.0.1:5173',
   'https://qr-scanner-trios-frontend.onrender.com',
-  'https://qr-scanner-trios-frontend.render.com'
+  'https://qr-scanner-trios-frontend.render.com',
+  'http://192.168.1.9:3000',
+  'http://localhost:3000'
 ];
 
 // Use CORS_ORIGIN from environment if provided
@@ -113,7 +115,7 @@ async function startServer() {
       console.log('ℹ️  Database sync skipped. Set FORCE_SYNC=true to sync on startup.');
     }
     
-    app.listen(PORT, () => {
+    app.listen(PORT, 'localhost', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📱 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);

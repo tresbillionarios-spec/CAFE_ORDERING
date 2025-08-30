@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# QR Scanner Trios - Network Access Startup Script
-echo "🚀 Starting QR Scanner Trios for Network Access..."
+# QR Scanner Trios - Localhost Startup Script
+echo "🚀 Starting QR Scanner Trios on Localhost..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -9,10 +9,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
-
-# Get local IP address
-LOCAL_IP=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -1)
-echo -e "${BLUE}📱 Local IP Address: ${LOCAL_IP}${NC}"
 
 # Check if we're in the right directory
 if [ ! -f "render.yaml" ]; then
@@ -43,7 +39,7 @@ PORT=5001
 NODE_ENV=development
 
 # CORS Configuration
-CORS_ORIGIN=http://${LOCAL_IP}:3000
+CORS_ORIGIN=http://localhost:3000
 
 # File Upload Configuration
 MAX_FILE_SIZE=5242880
@@ -62,7 +58,7 @@ fi
 if [ ! -f "frontend/.env" ]; then
     echo -e "${YELLOW}Creating frontend .env file...${NC}"
     cat > frontend/.env << EOF
-VITE_API_URL=http://${LOCAL_IP}:5001/api
+VITE_API_URL=http://localhost:5001/api
 EOF
     echo -e "${GREEN}✅ Frontend .env file created.${NC}"
 else
@@ -119,7 +115,6 @@ echo -e "${BLUE}🔍 Checking service status...${NC}"
 # Check backend
 if curl -s http://localhost:5001/health > /dev/null; then
     echo -e "${GREEN}✅ Backend is running on http://localhost:5001${NC}"
-    echo -e "${GREEN}✅ Backend network access: http://${LOCAL_IP}:5001${NC}"
 else
     echo -e "${RED}❌ Backend is not responding on http://localhost:5001${NC}"
 fi
@@ -127,24 +122,17 @@ fi
 # Check frontend
 if curl -s http://localhost:3000 > /dev/null; then
     echo -e "${GREEN}✅ Frontend is running on http://localhost:3000${NC}"
-    echo -e "${GREEN}✅ Frontend network access: http://${LOCAL_IP}:3000${NC}"
 else
     echo -e "${RED}❌ Frontend is not responding on http://localhost:3000${NC}"
 fi
 
 echo ""
-echo -e "${GREEN}🎉 Network-accessible development environment is ready!${NC}"
+echo -e "${GREEN}🎉 Localhost development environment is ready!${NC}"
 echo ""
 echo -e "${YELLOW}📋 Service URLs:${NC}"
-echo -e "${BLUE}• Frontend (Local):${NC} http://localhost:3000"
-echo -e "${BLUE}• Frontend (Network):${NC} http://${LOCAL_IP}:3000"
-echo -e "${BLUE}• Backend API (Local):${NC} http://localhost:5001"
-echo -e "${BLUE}• Backend API (Network):${NC} http://${LOCAL_IP}:5001"
-echo -e "${BLUE}• Health Check:${NC} http://${LOCAL_IP}:5001/health"
-echo ""
-echo -e "${YELLOW}📱 Mobile Access:${NC}"
-echo -e "${BLUE}• Open your mobile browser and go to:${NC} http://${LOCAL_IP}:3000"
-echo -e "${BLUE}• Make sure your mobile device is on the same WiFi network${NC}"
+echo -e "${BLUE}• Frontend:${NC} http://localhost:3000"
+echo -e "${BLUE}• Backend API:${NC} http://localhost:5001"
+echo -e "${BLUE}• Health Check:${NC} http://localhost:5001/health"
 echo ""
 echo -e "${YELLOW}📋 Test Accounts:${NC}"
 echo -e "${BLUE}• Email:${NC} admin@example.com"
