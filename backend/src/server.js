@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const { sequelize } = require('./config/database');
+const { User, Cafe, Menu, Table } = require('./models');
 const authRoutes = require('./routes/auth');
 const cafeRoutes = require('./routes/cafes');
 const menuRoutes = require('./routes/menu');
@@ -98,21 +99,176 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Initialize sample data
+async function initializeSampleData() {
+  try {
+    // Check if we already have data
+    const userCount = await User.count();
+    if (userCount > 0) {
+      console.log('ℹ️  Database already contains data, skipping initialization.');
+      return;
+    }
+
+    console.log('📝 Creating sample data...');
+
+    // Create a sample cafe owner
+    const sampleUser = await User.create({
+      name: 'Demo Cafe Owner',
+      email: 'demo@cafe.com',
+      password: 'password123',
+      role: 'cafe_owner',
+      phone: '+1234567890'
+    });
+
+    // Create a sample cafe
+    const sampleCafe = await Cafe.create({
+      name: 'Demo Cafe',
+      description: 'A sample cafe for demonstration purposes',
+      address: '123 Main Street, Demo City',
+      phone: '+1234567890',
+      owner_id: sampleUser.id
+    });
+
+    // Create sample menu items
+    const menuItems = await Menu.bulkCreate([
+      {
+        name: 'Cappuccino',
+        description: 'Rich espresso with steamed milk and foam',
+        price: 4.50,
+        category: 'Coffee',
+        cafe_id: sampleCafe.id,
+        is_available: true
+      },
+      {
+        name: 'Latte',
+        description: 'Smooth espresso with steamed milk',
+        price: 4.00,
+        category: 'Coffee',
+        cafe_id: sampleCafe.id,
+        is_available: true
+      },
+      {
+        name: 'Croissant',
+        description: 'Buttery French pastry',
+        price: 3.50,
+        category: 'Pastry',
+        cafe_id: sampleCafe.id,
+        is_available: true
+      },
+      {
+        name: 'Sandwich',
+        description: 'Fresh deli sandwich with chips',
+        price: 8.50,
+        category: 'Food',
+        cafe_id: sampleCafe.id,
+        is_available: true
+      }
+    ]);
+
+    // Create sample tables
+    const tables = await Table.bulkCreate([
+      {
+        table_number: 1,
+        table_name: 'Table 1',
+        capacity: 4,
+        location: 'main',
+        cafe_id: sampleCafe.id,
+        is_active: true,
+        status: 'available'
+      },
+      {
+        table_number: 2,
+        table_name: 'Table 2',
+        capacity: 2,
+        location: 'window',
+        cafe_id: sampleCafe.id,
+        is_active: true,
+        status: 'available'
+      },
+      {
+        table_number: 3,
+        table_name: 'Table 3',
+        capacity: 6,
+        location: 'patio',
+        cafe_id: sampleCafe.id,
+        is_active: true,
+        status: 'available'
+      }
+    ]);
+
+    // Create sample orders
+    const { Order, OrderItem } = require('./models');
+    
+    const sampleOrder = await Order.create({
+      order_number: 'ORD-001',
+      status: 'pending',
+      customer_name: 'John Doe',
+      customer_phone: '+1234567890',
+      customer_email: 'john@example.com',
+      subtotal: 12.50,
+      tax_amount: 1.25,
+      service_charge: 0.00,
+      total_amount: 13.75,
+      payment_method: 'cash',
+      payment_status: 'pending',
+      table_id: tables[0].id,
+      cafe_id: sampleCafe.id
+    });
+
+    await OrderItem.bulkCreate([
+      {
+        quantity: 2,
+        unit_price: 4.50,
+        total_price: 9.00,
+        menu_item_name: 'Cappuccino',
+        menu_item_description: 'Rich espresso with steamed milk and foam',
+        menu_item_category: 'Coffee',
+        order_id: sampleOrder.id,
+        menu_id: menuItems[0].id
+      },
+      {
+        quantity: 1,
+        unit_price: 3.50,
+        total_price: 3.50,
+        menu_item_name: 'Croissant',
+        menu_item_description: 'Buttery French pastry',
+        menu_item_category: 'Pastry',
+        order_id: sampleOrder.id,
+        menu_id: menuItems[2].id
+      }
+    ]);
+
+    console.log('✅ Sample data created successfully.');
+    console.log(`   - Created user: ${sampleUser.email}`);
+    console.log(`   - Created cafe: ${sampleCafe.name}`);
+    console.log(`   - Created ${menuItems.length} menu items`);
+    console.log(`   - Created ${tables.length} tables`);
+    console.log(`   - Created 1 sample order`);
+
+  } catch (error) {
+    console.error('❌ Error creating sample data:', error);
+  }
+}
+
 // Database connection and server start
 async function startServer() {
   try {
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
     
-    // Sync database for production (create tables if they don't exist)
-    if (process.env.NODE_ENV === 'production') {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Database synchronized for production.');
-    } else if (process.env.NODE_ENV === 'development' && process.env.FORCE_SYNC === 'true') {
-      await sequelize.sync({ alter: true });
-      console.log('✅ Database synchronized for development.');
-    } else if (process.env.NODE_ENV === 'development') {
-      console.log('ℹ️  Database sync skipped. Set FORCE_SYNC=true to sync on startup.');
+    // Sync database (create tables if they don't exist)
+    try {
+      await sequelize.sync({ force: false });
+      console.log('✅ Database synchronized successfully.');
+      
+      // Initialize with sample data only if database is empty
+      const userCount = await User.count();
+      if (userCount === 0) {
+        await initializeSampleData();
+      }
+    } catch (error) {
+      console.log('⚠️  Database sync warning:', error.message);
+      console.log('ℹ️  Continuing with existing database...');
     }
     
     app.listen(PORT, 'localhost', () => {

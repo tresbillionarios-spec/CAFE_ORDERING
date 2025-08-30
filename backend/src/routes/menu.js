@@ -53,7 +53,7 @@ router.post('/', authenticateToken, requireCafeOwner, [
       });
     }
 
-    const cafeId = req.params.cafeId || req.body.cafe_id;
+    const cafeId = req.body.cafe_id;
     
     // Verify cafe ownership
     const cafe = await Cafe.findOne({

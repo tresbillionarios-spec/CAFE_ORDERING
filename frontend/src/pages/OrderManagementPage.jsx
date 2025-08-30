@@ -14,9 +14,11 @@ const OrderManagementPage = () => {
 
   // Fetch orders from API
   const fetchOrders = async () => {
+    if (!user?.cafe?.id) return
+    
     try {
       setLoading(true)
-      const response = await api.get('/orders')
+      const response = await api.get(`/orders/cafe/${user.cafe.id}`)
       setOrders(response.data.orders || [])
     } catch (error) {
       console.error('Error fetching orders:', error)

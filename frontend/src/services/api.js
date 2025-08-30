@@ -29,8 +29,16 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      // Only redirect to login if we're not already on the login page
+      if (!window.location.pathname.includes('/login')) {
+        localStorage.removeItem('token')
+        // Use a more graceful logout instead of immediate redirect
+        if (window.authContext) {
+          window.authContext.logout()
+        } else {
+          window.location.href = '/login'
+        }
+      }
     }
     return Promise.reject(error)
   }
@@ -63,7 +71,8 @@ export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   getProfile: () => api.get('/auth/me'),
   updateProfile: (profileData) => api.put('/auth/me', profileData),
-  changePassword: (passwordData) => api.put('/auth/change-password', passwordData)
+  changePassword: (passwordData) => api.put('/auth/change-password', passwordData),
+  refreshToken: () => api.post('/auth/refresh')
 }
 
 // Cafe API functions
@@ -80,6 +89,16 @@ export const orderAPI = {
   updateOrderStatus: (id, statusData) => api.put(`/orders/${id}/status`, statusData),
   getOrderStats: (cafeId, period) => api.get(`/orders/cafe/${cafeId}/stats`, { params: { period } }),
   trackOrder: (orderNumber) => api.get(`/orders/track/${orderNumber}`)
+}
+
+// Table API functions
+export const tableAPI = {
+  getTables: (cafeId) => api.get(`/tables/cafe/${cafeId}`),
+  createTables: (cafeId, tableData) => api.post(`/tables/cafe/${cafeId}/bulk`, tableData),
+  updateTableStatus: (id, statusData) => api.put(`/tables/${id}/status`, statusData),
+  deleteTable: (id) => api.delete(`/tables/${id}`),
+  getTableQR: (id) => api.get(`/tables/${id}/qr`),
+  regenerateQR: (id) => api.post(`/tables/${id}/regenerate-qr`)
 }
 
 export default api

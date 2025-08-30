@@ -73,8 +73,14 @@ export const AuthProvider = ({ children }) => {
           })
         } catch (error) {
           console.error('Auth check failed:', error)
-          localStorage.removeItem('token')
-          dispatch({ type: 'LOGOUT' })
+          // Only logout if it's a real authentication error, not a network error
+          if (error.response?.status === 401) {
+            localStorage.removeItem('token')
+            dispatch({ type: 'LOGOUT' })
+          } else {
+            // For network errors, keep the token and try again later
+            dispatch({ type: 'SET_LOADING', payload: false })
+          }
         }
       } else {
         dispatch({ type: 'SET_LOADING', payload: false })
@@ -139,6 +145,14 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully')
   }
 
+  // Expose logout function globally for API interceptor
+  useEffect(() => {
+    window.authContext = { logout }
+    return () => {
+      delete window.authContext
+    }
+  }, [])
+
   const updateProfile = async (profileData) => {
     try {
       const response = await api.put('/auth/me', profileData)
@@ -172,13 +186,33 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const refreshToken = async () => {
+    try {
+      const response = await api.post('/auth/refresh')
+      const { token } = response.data
+      localStorage.setItem('token', token)
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: {
+          user: state.user,
+          token: token
+        }
+      })
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to refresh token:', error)
+      return { success: false, error: error.message }
+    }
+  }
+
   const value = {
     ...state,
     login,
     register,
     logout,
     updateProfile,
-    refreshUser
+    refreshUser,
+    refreshToken
   }
 
   return (

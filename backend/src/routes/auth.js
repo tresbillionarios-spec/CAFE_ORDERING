@@ -11,7 +11,7 @@ const generateToken = (userId) => {
   return jwt.sign(
     { userId },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
   );
 };
 
@@ -230,6 +230,25 @@ router.put('/me', authenticateToken, [
     res.status(500).json({
       error: 'Failed to update profile',
       message: 'An error occurred while updating your profile'
+    });
+  }
+});
+
+// Refresh token
+router.post('/refresh', authenticateToken, async (req, res) => {
+  try {
+    // Generate new token
+    const token = generateToken(req.user.id);
+
+    res.json({
+      message: 'Token refreshed successfully',
+      token
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({
+      error: 'Failed to refresh token',
+      message: 'An error occurred while refreshing your token'
     });
   }
 });
