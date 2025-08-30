@@ -1,8 +1,17 @@
 # Dependencies
 node_modules/
-*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment variables
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+backend/database.sqlite
+backend/database.sqlite3
+
+# Environment files (keep env.local for reference)
 .env
 .env.local
 .env.development.local
@@ -10,6 +19,8 @@ node_modules/
 .env.production.local
 
 # Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -28,8 +39,26 @@ coverage/
 # nyc test coverage
 .nyc_output
 
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower dependency directory (https://bower.io/)
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
 # Dependency directories
 jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
+
+# TypeScript cache
+*.tsbuildinfo
 
 # Optional npm cache directory
 .npm
@@ -51,6 +80,9 @@ jspm_packages/
 
 # Yarn Integrity file
 .yarn-integrity
+
+# dotenv environment variables file
+.env.test
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -91,18 +123,17 @@ temp/
 ehthumbs.db
 Thumbs.db
 
-# Database files
-*.sqlite
-*.sqlite3
-*.db
-
 # Build outputs
 frontend/dist/
-backend/dist/
+backend/build/
 
 # Uploads
 uploads/
+backend/uploads/
 
-# SSH Keys
-k
-k.pub
+# Backups
+backups/
+*.backup
+
+# Test files
+test-login.html
