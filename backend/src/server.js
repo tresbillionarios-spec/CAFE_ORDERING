@@ -43,7 +43,8 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV 
+    environment: process.env.NODE_ENV,
+    database: 'connected'
   });
 });
 
@@ -77,10 +78,13 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('✅ Database connection established successfully.');
     
-    // Sync database (in development) - only if needed
-    if (process.env.NODE_ENV === 'development' && process.env.FORCE_SYNC === 'true') {
+    // Sync database for production (create tables if they don't exist)
+    if (process.env.NODE_ENV === 'production') {
       await sequelize.sync({ alter: true });
-      console.log('✅ Database synchronized.');
+      console.log('✅ Database synchronized for production.');
+    } else if (process.env.NODE_ENV === 'development' && process.env.FORCE_SYNC === 'true') {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Database synchronized for development.');
     } else if (process.env.NODE_ENV === 'development') {
       console.log('ℹ️  Database sync skipped. Set FORCE_SYNC=true to sync on startup.');
     }
@@ -89,6 +93,7 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📱 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+      console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
     });
   } catch (error) {
     console.error('❌ Unable to start server:', error);

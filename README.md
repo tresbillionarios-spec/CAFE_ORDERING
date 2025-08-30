@@ -46,7 +46,33 @@ qr-ordering-system/
 └── README.md
 ```
 
-## 🛠️ Setup Instructions
+## 🚀 Quick Deployment
+
+### Deploy to Render (Recommended)
+
+Get your app live in under 10 minutes with our automated deployment setup!
+
+1. **Run the setup script:**
+   ```bash
+   ./setup-render-deployment.sh
+   ```
+
+2. **Deploy on Render:**
+   - Go to [https://render.com](https://render.com)
+   - Sign up with GitHub
+   - Click "New +" → "Blueprint"
+   - Connect your repository
+   - Render handles everything else!
+
+3. **Your app will be live at:**
+   - Frontend: `https://qr-scanner-trios-frontend.onrender.com`
+   - Backend: `https://qr-scanner-trios-backend.onrender.com`
+
+📖 **For detailed deployment instructions, see:**
+- [Quick Start Guide](QUICK_START_RENDER.md)
+- [Complete Deployment Guide](DEPLOYMENT_GUIDE.md)
+
+## 🛠️ Local Development Setup
 
 ### Prerequisites
 - Node.js (v16 or higher)
