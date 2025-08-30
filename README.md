@@ -1,210 +1,256 @@
-# QR Ordering System
+# QR Scanner Trios - Complete Working Solution
 
-A full-stack QR code-based ordering system for multiple cafes located in the same place. Customers can scan QR codes to view menus and place orders, while cafe owners can manage their menus and track orders.
+A comprehensive QR code-based restaurant ordering system with full authentication, menu management, order tracking, and table management capabilities.
 
-## 🏗️ Architecture
+## 🚀 Quick Start
 
-- **Frontend**: React + Vite + TailwindCSS + React Router DOM + Axios
-- **Backend**: Node.js + Express + JWT Authentication + Sequelize ORM
-- **Database**: PostgreSQL (Neon/Supabase)
-- **Deployment**: Vercel (Frontend) + Render/Railway (Backend)
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Git
 
-## 🚀 Features
+### Installation & Setup
 
-- **Cafe Management**: Register and manage cafe profiles
-- **Menu Management**: Add/edit/delete menu items with categories and availability
-- **QR Code Generation**: Unique QR codes for each cafe
-- **Ordering System**: Customer-friendly mobile interface
-- **Order Management**: Real-time order tracking and status updates
-- **User Authentication**: JWT-based role management (Cafe Owner, Customer)
-- **Responsive Design**: Mobile-first approach for QR scanning
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/zee71645-dotcom/qr-scanner-trios.git
+   cd qr-scanner-trios
+   ```
+
+2. **Quick Setup (Recommended)**
+   ```bash
+   chmod +x setup-localhost.sh
+   ./setup-localhost.sh
+   ```
+
+3. **Manual Setup**
+   ```bash
+   # Backend setup
+   cd backend
+   npm install
+   cp env.local .env
+   
+   # Frontend setup
+   cd ../frontend
+   npm install
+   cp env.local .env
+   ```
+
+4. **Start the application**
+   ```bash
+   # Start both servers
+   ./start-apps.sh
+   
+   # Or start individually
+   ./start-backend.sh
+   ./start-frontend.sh
+   ```
+
+5. **Access the application**
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:5001
+   - Health Check: http://localhost:5001/health
+
+## 🔧 Key Features
+
+### ✅ Authentication System
+- **JWT-based authentication** with 30-day token expiration
+- **Automatic token refresh** mechanism
+- **Persistent login sessions** - no more automatic logouts
+- **Role-based access control** (cafe owners)
+
+### ✅ Menu Management
+- Add, edit, delete menu items
+- Category organization
+- Price management
+- Availability controls
+- Image upload support
+
+### ✅ Order Management
+- Real-time order tracking
+- Order status updates
+- Customer information management
+- Payment status tracking
+- Order history
+
+### ✅ Table Management
+- Dynamic table creation
+- QR code generation for each table
+- Table status tracking
+- Capacity management
+
+### ✅ QR Code System
+- Automatic QR code generation
+- QR code regeneration
+- Table-specific QR codes
+- Customer ordering interface
+
+## 🛠️ Technical Stack
+
+### Backend
+- **Node.js** with Express.js
+- **SQLite** database (local development)
+- **Sequelize ORM** for database management
+- **JWT** for authentication
+- **Multer** for file uploads
+- **CORS** enabled for frontend communication
+
+### Frontend
+- **React 18** with Vite
+- **Tailwind CSS** for styling
+- **React Router** for navigation
+- **Axios** for API communication
+- **React Hot Toast** for notifications
+- **Context API** for state management
 
 ## 📁 Project Structure
 
 ```
-qr-ordering-system/
-├── frontend/                 # React frontend application
+qr-scanner-trios/
+├── backend/
 │   ├── src/
-│   │   ├── components/      # Reusable UI components
+│   │   ├── config/          # Database configuration
+│   │   ├── middleware/      # Authentication middleware
+│   │   ├── models/          # Sequelize models
+│   │   ├── routes/          # API routes
+│   │   └── server.js        # Main server file
+│   ├── env.local           # Environment variables
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── contexts/        # React contexts
 │   │   ├── pages/          # Page components
-│   │   ├── services/       # API service functions
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── utils/          # Utility functions
-│   │   └── styles/         # Global styles
-│   ├── public/             # Static assets
+│   │   ├── services/       # API services
+│   │   └── main.jsx        # App entry point
+│   ├── env.local          # Environment variables
 │   └── package.json
-├── backend/                 # Node.js backend application
-│   ├── src/
-│   │   ├── controllers/    # Route controllers
-│   │   ├── models/         # Sequelize models
-│   │   ├── routes/         # API routes
-│   │   ├── middleware/     # Custom middleware
-│   │   ├── config/         # Configuration files
-│   │   └── utils/          # Utility functions
-│   ├── migrations/         # Database migrations
-│   └── package.json
-└── README.md
+├── *.sh                   # Utility scripts
+└── *.md                  # Documentation
 ```
 
-## 🚀 Quick Deployment
+## 🔄 Available Scripts
 
-### Deploy to Render (Recommended)
+### Setup Scripts
+- `setup-localhost.sh` - Complete setup for localhost
+- `start-apps.sh` - Start both backend and frontend
+- `restart-servers.sh` - Restart both servers safely
 
-Get your app live in under 10 minutes with our automated deployment setup!
+### Utility Scripts
+- `monitor-servers.sh` - Monitor and auto-restart servers
+- `backup-data.sh` - Backup SQLite database
+- `test-localhost.sh` - Test server connectivity
 
-1. **Run the setup script:**
+### Individual Scripts
+- `start-backend.sh` - Start backend server only
+- `start-frontend.sh` - Start frontend server only
+
+## 🔐 Authentication
+
+### Default Login Credentials
+- **Email**: demo@cafe.com
+- **Password**: password123
+
+### Features
+- **30-day JWT token expiration**
+- **Automatic token refresh**
+- **Persistent sessions**
+- **Secure password hashing**
+
+## 📊 Database
+
+### SQLite Database (Local Development)
+- **Location**: `backend/database.sqlite`
+- **Auto-sync**: Tables created automatically
+- **Sample data**: Included for testing
+- **Persistence**: Data preserved between restarts
+
+### Sample Data
+- Demo cafe owner account
+- Sample cafe with menu items
+- Sample tables with QR codes
+- Sample orders for testing
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+1. **Port already in use**
    ```bash
-   ./setup-render-deployment.sh
+   ./restart-servers.sh
    ```
 
-2. **Deploy on Render:**
-   - Go to [https://render.com](https://render.com)
-   - Sign up with GitHub
-   - Click "New +" → "Blueprint"
-   - Connect your repository
-   - Render handles everything else!
+2. **Database issues**
+   ```bash
+   ./backup-data.sh
+   rm backend/database.sqlite
+   ./restart-servers.sh
+   ```
 
-3. **Your app will be live at:**
-   - Frontend: `https://qr-scanner-trios-frontend.onrender.com`
-   - Backend: `https://qr-scanner-trios-backend.onrender.com`
+3. **Authentication problems**
+   - Clear browser localStorage
+   - Restart both servers
+   - Check environment variables
 
-📖 **For detailed deployment instructions, see:**
-- [Quick Start Guide](QUICK_START_RENDER.md)
-- [Complete Deployment Guide](DEPLOYMENT_GUIDE.md)
+4. **Frontend not loading**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-## 🛠️ Local Development Setup
-
-### Prerequisites
-- Node.js (v16 or higher)
-- PostgreSQL database (Neon/Supabase free tier)
-- npm or yarn
-
-### Backend Setup
-
-1. Navigate to backend directory:
+### Monitoring
 ```bash
-cd backend
+# Monitor servers automatically
+./monitor-servers.sh
+
+# Check server status
+./test-localhost.sh
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+## 📚 Documentation
 
-3. Create `.env` file:
-```bash
-cp .env.example .env
-```
+- [PERSISTENT_SOLUTION.md](./PERSISTENT_SOLUTION.md) - Complete solution guide
+- [LOCALHOST_SETUP.md](./LOCALHOST_SETUP.md) - Localhost setup instructions
+- [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) - API endpoints documentation
+- [TECHNICAL_ARCHITECTURE.md](./TECHNICAL_ARCHITECTURE.md) - Technical details
 
-4. Update `.env` with your database credentials:
-```env
-DB_HOST=your-db-host
-DB_USER=your-db-user
-DB_PASS=your-db-password
-DB_NAME=your-db-name
-DB_PORT=5432
-JWT_SECRET=your-jwt-secret
-PORT=5000
-```
+## 🔄 Recent Fixes
 
-5. Run database migrations:
-```bash
-npm run migrate
-```
+### ✅ Resolved Issues
+- **Automatic logout after 2 minutes** - Fixed with extended JWT expiration
+- **Order Management not working** - Fixed API endpoint issues
+- **Table creation problems** - Fixed frontend-backend integration
+- **QR code generation issues** - Fixed table management
+- **Data persistence** - Fixed database sync configuration
 
-6. Start development server:
-```bash
-npm run dev
-```
-
-### Frontend Setup
-
-1. Navigate to frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Create `.env` file:
-```bash
-cp .env.example .env
-```
-
-4. Update `.env` with backend API URL:
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-
-5. Start development server:
-```bash
-npm run dev
-```
-
-## 🗄️ Database Models
-
-- **Users**: Authentication and user management
-- **Cafes**: Cafe profiles and settings
-- **Menus**: Menu items with categories and pricing
-- **Orders**: Order tracking and status management
-- **OrderItems**: Individual items within orders
-
-## 🔐 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - Register new cafe owner
-- `POST /api/auth/login` - Login user
-- `GET /api/auth/me` - Get current user profile
-
-### Cafes
-- `GET /api/cafes` - Get all cafes
-- `GET /api/cafes/:id` - Get specific cafe
-- `PUT /api/cafes/:id` - Update cafe profile
-- `POST /api/cafes/:id/qr` - Generate QR code
-
-### Menus
-- `GET /api/cafes/:id/menu` - Get cafe menu
-- `POST /api/menu` - Add menu item
-- `PUT /api/menu/:id` - Update menu item
-- `DELETE /api/menu/:id` - Delete menu item
-
-### Orders
-- `POST /api/orders` - Create new order
-- `GET /api/orders` - Get orders (filtered by cafe)
-- `PUT /api/orders/:id/status` - Update order status
-
-## 🚀 Deployment
-
-### Frontend (Vercel)
-1. Connect your GitHub repository to Vercel
-2. Set build command: `npm run build`
-3. Set output directory: `dist`
-4. Add environment variables
-
-### Backend (Render/Railway)
-1. Connect your GitHub repository
-2. Set build command: `npm install`
-3. Set start command: `npm start`
-4. Add environment variables
-5. Connect PostgreSQL database
-
-## 📱 Usage
-
-1. **Cafe Owner**: Register and create menu items
-2. **QR Generation**: System generates unique QR code for each cafe
-3. **Customer**: Scan QR code to view menu and place orders
-4. **Order Management**: Cafe owners track and update order status
+### 🆕 New Features
+- **Token refresh mechanism**
+- **Server monitoring and auto-restart**
+- **Database backup system**
+- **Comprehensive error handling**
+- **Improved authentication flow**
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Submit a pull request
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For issues and questions:
+1. Check the troubleshooting section
+2. Review the documentation files
+3. Check the recent fixes section
+4. Create an issue on GitHub
+
+---
+
+**Status**: ✅ **FULLY WORKING** - All features functional with persistent data and no automatic logout issues.
