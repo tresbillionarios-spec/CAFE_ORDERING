@@ -51,7 +51,6 @@ services:
     name: qr-scanner-trios-frontend
     env: static
     plan: free
-    region: oregon
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: ./frontend/dist
     envVars:
