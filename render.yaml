@@ -13,6 +13,8 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://qr-scanner-trios.onrender.com
+        value: https://qr-scanner-trios-backend.onrender.com
       - key: FRONTEND_URL
-        value: https://qr-scanner-trios.onrender.com
+        value: https://qr-scanner-trios-backend.onrender.com
+      - key: FORCE_SYNC
+        value: false
