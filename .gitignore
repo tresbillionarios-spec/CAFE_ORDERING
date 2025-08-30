@@ -102,3 +102,7 @@ backend/dist/
 
 # Uploads
 uploads/
+
+# SSH Keys
+k
+k.pub
