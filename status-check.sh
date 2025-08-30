@@ -53,3 +53,4 @@ echo -e "${YELLOW}💡 Tips:${NC}"
 echo -e "   • Use the network URLs to access from other devices"
 echo -e "   • Share the network frontend URL with customers for QR scanning"
 echo -e "   • The backend API is accessible for mobile apps"
+
