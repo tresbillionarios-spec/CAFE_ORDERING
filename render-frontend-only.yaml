@@ -1,0 +1,13 @@
+services:
+  # Frontend Static Site Only
+  - type: web
+    name: qr-scanner-trios-frontend
+    env: static
+    buildCommand: |
+      cd frontend
+      npm ci
+      npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://qr-scanner-trios-backend.onrender.com/api

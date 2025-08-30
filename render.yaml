@@ -59,9 +59,6 @@ services:
       npm ci
       npm run build
     staticPublishPath: ./frontend/dist
-    buildFilter:
-      paths:
-        - frontend/**
     envVars:
       - key: VITE_API_URL
         value: https://qr-scanner-trios-backend.onrender.com/api
