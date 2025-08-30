@@ -111,6 +111,14 @@ const Cafe = sequelize.define('Cafe', {
     type: DataTypes.TEXT,
     allowNull: true,
     defaultValue: JSON.stringify([])
+  },
+  owner_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
 }, {
   tableName: 'cafes',

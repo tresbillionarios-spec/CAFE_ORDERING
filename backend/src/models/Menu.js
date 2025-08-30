@@ -32,6 +32,14 @@ const Menu = sequelize.define('Menu', {
       len: [2, 50]
     }
   },
+  cafe_id: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'cafes',
+      key: 'id'
+    }
+  },
   image_url: {
     type: DataTypes.STRING,
     allowNull: true
