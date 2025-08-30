@@ -8,7 +8,7 @@ services:
     buildCommand: |
       cd backend
       npm ci --only=production
-    startCommand: cd backend && npm start
+    startCommand: cd backend && ./start.sh
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -22,6 +22,8 @@ services:
       - key: FRONTEND_URL
         value: https://qr-scanner-trios-frontend.onrender.com
       - key: FORCE_SYNC
+        value: true
+      - key: USE_SQLITE
         value: false
       - key: DB_HOST
         fromDatabase:

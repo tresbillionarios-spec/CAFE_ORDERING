@@ -29,8 +29,16 @@ app.use('/api/', limiter);
 const allowedOrigins = [
   'http://localhost:5173',
   'http://192.168.1.9:5173',
-  'http://127.0.0.1:5173'
+  'http://127.0.0.1:5173',
+  'https://qr-scanner-trios-frontend.onrender.com',
+  'https://qr-scanner-trios-frontend.render.com'
 ];
+
+// Use CORS_ORIGIN from environment if provided
+const corsOrigin = process.env.CORS_ORIGIN;
+if (corsOrigin && !allowedOrigins.includes(corsOrigin)) {
+  allowedOrigins.push(corsOrigin);
+}
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -40,6 +48,7 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
+      console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
