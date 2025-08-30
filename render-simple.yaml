@@ -5,9 +5,7 @@ services:
     env: node
     plan: free
     region: oregon
-    buildCommand: |
-      cd backend
-      npm ci --only=production
+    buildCommand: cd backend && npm ci --only=production
     startCommand: cd backend && npm start
     healthCheckPath: /health
     envVars:
@@ -53,14 +51,8 @@ services:
     name: qr-scanner-trios-frontend
     plan: free
     region: oregon
-    buildCommand: |
-      cd frontend
-      npm ci
-      npm run build
+    buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: ./frontend/dist
-    buildFilter:
-      paths:
-        - frontend/**
     envVars:
       - key: VITE_API_URL
         value: https://qr-scanner-trios-backend.onrender.com/api
