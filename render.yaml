@@ -50,15 +50,17 @@ services:
           name: qr-scanner-trios-db
           property: connectionString
 
-  # Frontend Static Site
+  # Frontend Web Service (with Express server for SPA routing)
   - type: web
     name: qr-scanner-trios-frontend
-    env: static
+    env: node
+    plan: free
+    region: oregon
     buildCommand: |
       cd frontend
       npm ci
       npm run build
-    staticPublishPath: ./frontend/dist
+    startCommand: cd frontend && npm run serve
     envVars:
       - key: VITE_API_URL
         value: https://qr-scanner-trios-backend.onrender.com/api
