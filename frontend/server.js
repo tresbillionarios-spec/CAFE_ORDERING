@@ -1,5 +1,11 @@
-const express = require('express');
-const path = require('path');
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,7 +29,7 @@ app.get('*', (req, res) => {
   const indexPath = path.join(__dirname, 'dist', 'index.html');
   
   // Check if index.html exists
-  if (require('fs').existsSync(indexPath)) {
+  if (fs.existsSync(indexPath)) {
     console.log(`Serving index.html for route: ${req.path}`);
     res.sendFile(indexPath);
   } else {
