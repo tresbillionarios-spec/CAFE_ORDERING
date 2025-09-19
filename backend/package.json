@@ -1,7 +1,7 @@
 {
-  "name": "qr-ordering-backend",
+  "name": "orderkaro-backend",
   "version": "1.0.0",
-  "description": "Backend API for QR Ordering System",
+  "description": "Backend API for OrdeRKaro - Smart Ordering System",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

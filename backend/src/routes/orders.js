@@ -287,6 +287,130 @@ router.get('/cafe/:cafeId', authenticateToken, requireCafeOwnership, async (req,
   }
 });
 
+// Get orders with filtering and pagination for reports
+router.get('/reports', authenticateToken, async (req, res) => {
+  try {
+    // Get the cafe owned by the authenticated user
+    const cafe = await Cafe.findOne({
+      where: { owner_id: req.user.id }
+    });
+
+    if (!cafe) {
+      return res.status(404).json({
+        error: 'Cafe not found',
+        message: 'No cafe found for this user'
+      });
+    }
+
+    // Extract query parameters
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      payment_method,
+      start_date,
+      end_date
+    } = req.query;
+
+    // Build where clause
+    const whereClause = { cafe_id: cafe.id };
+
+    // Add status filter
+    if (status && status !== 'all') {
+      whereClause.status = status;
+    }
+
+    // Add payment method filter
+    if (payment_method && payment_method !== 'all') {
+      whereClause.payment_method = payment_method;
+    }
+
+    // Add date range filter
+    if (start_date || end_date) {
+      whereClause.created_at = {};
+      if (start_date) {
+        const startDate = new Date(start_date);
+        startDate.setHours(0, 0, 0, 0); // Start of day
+        whereClause.created_at[require('sequelize').Op.gte] = startDate;
+      }
+      if (end_date) {
+        // Add 23:59:59 to end_date to include the entire day
+        const endDate = new Date(end_date);
+        endDate.setHours(23, 59, 59, 999);
+        whereClause.created_at[require('sequelize').Op.lte] = endDate;
+      }
+    }
+
+    // Calculate pagination
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Get total count for pagination
+    const totalCount = await Order.count({
+      where: whereClause
+    });
+
+    // Get orders with pagination
+    const orders = await Order.findAll({
+      where: whereClause,
+      include: [{
+        model: OrderItem,
+        as: 'items',
+        attributes: ['id', 'quantity', 'unit_price', 'total_price', 'menu_item_name', 'menu_item_description']
+      }],
+      order: [['created_at', 'DESC']],
+      limit: parseInt(limit),
+      offset: offset
+    });
+
+    // Format orders for response
+    const formattedOrders = orders.map(order => ({
+      id: order.id,
+      order_number: order.order_number,
+      customer_name: order.customer_name,
+      customer_phone: order.customer_phone,
+      customer_email: order.customer_email,
+      items: order.items.map(item => ({
+        name: item.menu_item_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price
+      })),
+      total_amount: order.total_amount,
+      payment_method: order.payment_method,
+      status: order.status,
+      created_at: order.createdAt || order.created_at,
+      updated_at: order.updatedAt || order.updated_at
+    }));
+
+
+
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(totalCount / parseInt(limit));
+    const hasNextPage = parseInt(page) < totalPages;
+    const hasPrevPage = parseInt(page) > 1;
+
+
+    res.json({
+      orders: formattedOrders,
+      pagination: {
+        current_page: parseInt(page),
+        total_pages: totalPages,
+        total_count: totalCount,
+        has_next_page: hasNextPage,
+        has_prev_page: hasPrevPage,
+        limit: parseInt(limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get orders reports error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch orders reports',
+      message: 'An error occurred while fetching orders reports'
+    });
+  }
+});
+
 // Get specific order (cafe owner only)
 router.get('/:id', authenticateToken, requireCafeOwnership, async (req, res) => {
   try {
@@ -533,5 +657,6 @@ router.get('/cafe/:cafeId/stats', authenticateToken, requireCafeOwnership, async
     });
   }
 });
+
 
 module.exports = router;

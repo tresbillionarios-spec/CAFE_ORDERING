@@ -130,7 +130,7 @@ router.post('/login', [
       include: [{
         model: Cafe,
         as: 'cafe',
-        attributes: ['id', 'name', 'description', 'is_active']
+        attributes: ['id', 'name', 'description', 'is_active', 'is_approved']
       }]
     });
 
@@ -148,6 +148,22 @@ router.post('/login', [
         error: 'Invalid credentials',
         message: 'Email or password is incorrect'
       });
+    }
+
+    // Check if cafe owner's café is approved
+    if (user.role === 'cafe_owner' && user.cafe) {
+      if (user.cafe.is_approved === false) {
+        return res.status(403).json({
+          error: 'Account not approved',
+          message: 'Your café registration has been rejected. Please contact support for more information.'
+        });
+      }
+      if (user.cafe.is_approved === null) {
+        return res.status(403).json({
+          error: 'Account pending approval',
+          message: 'Your café registration is pending approval. You will be notified once it is reviewed.'
+        });
+      }
     }
 
     // Update last login
@@ -183,7 +199,7 @@ router.get('/me', authenticateToken, async (req, res) => {
       include: [{
         model: Cafe,
         as: 'cafe',
-        attributes: ['id', 'name', 'description', 'address', 'phone', 'email', 'logo_url', 'banner_url', 'is_active', 'theme_color', 'currency']
+        attributes: ['id', 'name', 'description', 'address', 'phone', 'email', 'logo_url', 'banner_url', 'is_active', 'theme_color', 'currency', 'tax_rate', 'service_charge']
       }]
     });
 

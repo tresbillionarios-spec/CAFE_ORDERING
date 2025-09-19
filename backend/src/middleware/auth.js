@@ -15,7 +15,13 @@ const authenticateToken = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findByPk(decoded.userId);
+    const user = await User.findByPk(decoded.userId, {
+      include: [{
+        model: require('../models').Cafe,
+        as: 'cafe',
+        required: false
+      }]
+    });
 
     if (!user || !user.is_active) {
       return res.status(401).json({ 
@@ -68,6 +74,33 @@ const requireCafeOwner = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Cafe owner middleware error:', error);
+    return res.status(500).json({ 
+      error: 'Authorization error',
+      message: 'An error occurred during authorization' 
+    });
+  }
+};
+
+// Middleware to check if user is admin
+const requireAdmin = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        message: 'Please login to access this resource' 
+      });
+    }
+
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        error: 'Access denied',
+        message: 'This resource is only available to administrators' 
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin middleware error:', error);
     return res.status(500).json({ 
       error: 'Authorization error',
       message: 'An error occurred during authorization' 
@@ -138,6 +171,7 @@ const optionalAuth = async (req, res, next) => {
 module.exports = {
   authenticateToken,
   requireCafeOwner,
+  requireAdmin,
   requireCafeOwnership,
   optionalAuth
 };

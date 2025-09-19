@@ -61,6 +61,11 @@ const Cafe = sequelize.define('Cafe', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
+  is_approved: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: null
+  },
   qr_code_url: {
     type: DataTypes.STRING,
     allowNull: true

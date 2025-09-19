@@ -98,11 +98,18 @@ router.put('/:id', authenticateToken, requireCafeOwnership, [
     const updateData = { ...req.body };
     delete updateData.id; // Prevent ID update
 
+    console.log('Updating cafe with data:', updateData);
+    console.log('Cafe ID:', req.cafe.id);
+
     await req.cafe.update(updateData);
+
+    // Fetch updated cafe data
+    const updatedCafe = await Cafe.findByPk(req.cafe.id);
+    console.log('Updated cafe data:', updatedCafe.toJSON());
 
     res.json({
       message: 'Cafe profile updated successfully',
-      cafe: req.cafe
+      cafe: updatedCafe
     });
   } catch (error) {
     console.error('Update cafe error:', error);
@@ -156,31 +163,28 @@ router.get('/:id/dashboard', authenticateToken, requireCafeOwnership, async (req
   try {
     const { id } = req.params;
     const { period = 'today' } = req.query;
+    const { Op } = require('sequelize');
 
-    // Calculate date range based on period
+    // Calculate date ranges
     const now = new Date();
-    let startDate = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    switch (period) {
-      case 'today':
-        startDate.setHours(0, 0, 0, 0);
-        break;
-      case 'week':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        startDate.setMonth(now.getMonth() - 1);
-        break;
-      default:
-        startDate.setHours(0, 0, 0, 0);
-    }
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const monthAgo = new Date(today);
+    monthAgo.setMonth(monthAgo.getMonth() - 1);
 
-    // Get orders for the period
-    const orders = await Order.findAll({
+    // Get today's orders
+    const todayOrders = await Order.findAll({
       where: {
         cafe_id: id,
         created_at: {
-          [require('sequelize').Op.gte]: startDate
+          [Op.gte]: today
         }
       },
       include: [{
@@ -189,11 +193,62 @@ router.get('/:id/dashboard', authenticateToken, requireCafeOwnership, async (req
       }]
     });
 
-    // Calculate statistics
-    const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
-    const pendingOrders = orders.filter(order => ['pending', 'confirmed', 'preparing'].includes(order.status)).length;
-    const completedOrders = orders.filter(order => order.status === 'completed').length;
+    // Get yesterday's orders for comparison
+    const yesterdayOrders = await Order.findAll({
+      where: {
+        cafe_id: id,
+        created_at: {
+          [Op.gte]: yesterday,
+          [Op.lt]: today
+        }
+      }
+    });
+
+    // Get last 7 days orders for trends
+    const weekOrders = await Order.findAll({
+      where: {
+        cafe_id: id,
+        created_at: {
+          [Op.gte]: weekAgo
+        }
+      },
+      include: [{
+        model: require('../models').OrderItem,
+        as: 'items'
+      }]
+    });
+
+    // Get last 30 days orders for trends
+    const monthOrders = await Order.findAll({
+      where: {
+        cafe_id: id,
+        created_at: {
+          [Op.gte]: monthAgo
+        }
+      },
+      include: [{
+        model: require('../models').OrderItem,
+        as: 'items'
+      }]
+    });
+
+    // Calculate today's metrics
+    const todayTotalOrders = todayOrders.length;
+    const todayRevenue = todayOrders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+    const todayPendingOrders = todayOrders.filter(order => ['pending', 'confirmed', 'preparing'].includes(order.status)).length;
+    
+    // Calculate yesterday's metrics for comparison
+    const yesterdayTotalOrders = yesterdayOrders.length;
+    const yesterdayRevenue = yesterdayOrders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+    
+    // Calculate percentage changes
+    const orderChangePercent = yesterdayTotalOrders > 0 
+      ? ((todayTotalOrders - yesterdayTotalOrders) / yesterdayTotalOrders * 100).toFixed(1)
+      : todayTotalOrders > 0 ? 100 : 0;
+    
+    const revenueChangePercent = yesterdayRevenue > 0 
+      ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue * 100).toFixed(1)
+      : todayRevenue > 0 ? 100 : 0;
 
     // Get menu statistics
     const menuItems = await Menu.findAll({
@@ -202,23 +257,132 @@ router.get('/:id/dashboard', authenticateToken, requireCafeOwnership, async (req
 
     const totalMenuItems = menuItems.length;
     const availableItems = menuItems.filter(item => item.is_available).length;
+    const lowStockItems = menuItems.filter(item => item.is_available && (item.stock_quantity || 0) <= 5).length;
 
-    res.json({
+    // Calculate sales trends (last 7 days)
+    const salesTrend = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+      
+      const dayOrders = weekOrders.filter(order => {
+        const orderDate = new Date(order.created_at);
+        return orderDate >= date && orderDate < nextDate;
+      });
+      
+      const dayRevenue = dayOrders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+      
+      salesTrend.push({
+        date: date.toISOString().split('T')[0],
+        orders: dayOrders.length,
+        revenue: dayRevenue
+      });
+    }
+
+    // Top selling items (last 30 days)
+    const itemSales = {};
+    monthOrders.forEach(order => {
+      order.items.forEach(item => {
+        const key = item.menu_item_name;
+        if (!itemSales[key]) {
+          itemSales[key] = { name: key, quantity: 0, revenue: 0 };
+        }
+        itemSales[key].quantity += item.quantity;
+        itemSales[key].revenue += parseFloat(item.total_price || 0);
+      });
+    });
+
+    const topSellingItems = Object.values(itemSales)
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
+
+    // Payment methods distribution (last 30 days)
+    const paymentMethods = {};
+    monthOrders.forEach(order => {
+      const method = order.payment_method || 'Unknown';
+      if (!paymentMethods[method]) {
+        paymentMethods[method] = { method, count: 0, revenue: 0 };
+      }
+      paymentMethods[method].count++;
+      paymentMethods[method].revenue += parseFloat(order.total_amount || 0);
+    });
+
+    const paymentDistribution = Object.values(paymentMethods);
+
+    // Peak order hours (last 30 days)
+    const hourlyStats = {};
+    for (let i = 0; i < 24; i++) {
+      hourlyStats[i] = { hour: i, orders: 0, revenue: 0 };
+    }
+
+    monthOrders.forEach(order => {
+      const hour = new Date(order.created_at).getHours();
+      hourlyStats[hour].orders++;
+      hourlyStats[hour].revenue += parseFloat(order.total_amount || 0);
+    });
+
+    const peakHours = Object.values(hourlyStats)
+      .sort((a, b) => b.orders - a.orders)
+      .slice(0, 5);
+
+    // Orders in progress (today)
+    const ordersInProgress = todayOrders
+      .filter(order => ['pending', 'confirmed', 'preparing'].includes(order.status))
+      .map(order => ({
+        id: order.id,
+        order_number: order.order_number,
+        status: order.status,
+        customer_name: order.customer_name,
+        total_amount: order.total_amount,
+        created_at: order.created_at,
+        items: order.items.map(item => ({
+          name: item.menu_item_name,
+          quantity: item.quantity
+        }))
+      }));
+
+    // Gamification metrics
+    const lastMonthRevenue = monthOrders.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0);
+    const currentMonthRevenue = todayRevenue; // This would be better calculated for the full month
+    const achievementPercent = lastMonthRevenue > 0 ? Math.min((currentMonthRevenue / lastMonthRevenue * 100), 100) : 0;
+
+    const response = {
       dashboard: {
         period,
-        orders: {
-          total: totalOrders,
-          pending: pendingOrders,
-          completed: completedOrders
-        },
-        revenue: {
-          total: totalRevenue.toFixed(2)
+        metrics: {
+          total_orders_today: todayTotalOrders,
+          order_change_percent: parseFloat(orderChangePercent),
+          total_revenue_today: todayRevenue,
+          revenue_change_percent: parseFloat(revenueChangePercent),
+          pending_orders_count: todayPendingOrders,
+          active_cafes_count: 1 // For single cafe owner
         },
         menu: {
           total: totalMenuItems,
-          available: availableItems
+          available: availableItems,
+          low_stock: lowStockItems
         },
-        recent_orders: orders.slice(0, 10).map(order => ({
+        trends: {
+          sales_trend: salesTrend,
+          top_selling_items: topSellingItems,
+          payment_distribution: paymentDistribution,
+          peak_hours: peakHours
+        },
+        operations: {
+          orders_in_progress: ordersInProgress,
+          inventory_alerts: lowStockItems > 0 ? [
+            { type: 'low_stock', message: `${lowStockItems} items running low on stock`, count: lowStockItems }
+          ] : []
+        },
+        engagement: {
+          achievement_percent: Math.round(achievementPercent),
+          achievement_message: achievementPercent >= 90 ? 
+            `🎉 You achieved ${Math.round(achievementPercent)}% of last month's sales!` :
+            `Keep going! You're at ${Math.round(achievementPercent)}% of last month's sales.`
+        },
+        recent_orders: todayOrders.slice(0, 10).map(order => ({
           id: order.id,
           order_number: order.order_number,
           status: order.status,
@@ -227,7 +391,11 @@ router.get('/:id/dashboard', authenticateToken, requireCafeOwnership, async (req
           created_at: order.created_at
         }))
       }
-    });
+    };
+
+    // console.log('Dashboard API Response:', JSON.stringify(response, null, 2));
+    res.json(response);
+
   } catch (error) {
     console.error('Get dashboard error:', error);
     res.status(500).json({

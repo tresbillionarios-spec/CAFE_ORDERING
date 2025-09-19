@@ -11,6 +11,8 @@ const cafeRoutes = require('./routes/cafes');
 const menuRoutes = require('./routes/menu');
 const orderRoutes = require('./routes/orders');
 const tableRoutes = require('./routes/tables');
+const adminRoutes = require('./routes/admin');
+const supportRoutes = require('./routes/support');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -85,6 +87,8 @@ app.use('/api/cafes', cafeRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/tables', tableRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/support', supportRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
