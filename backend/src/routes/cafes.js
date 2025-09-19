@@ -353,4 +353,56 @@ router.post('/', authenticateToken, [
   }
 });
 
+// Get current user's cafe (authenticated users only)
+router.get('/my/cafe', authenticateToken, requireCafeOwner, async (req, res) => {
+  try {
+    const cafe = await Cafe.findOne({
+      where: { owner_id: req.user.id },
+      include: [{
+        model: Menu,
+        as: 'menu_items',
+        required: false,
+        order: [['sort_order', 'ASC'], ['category', 'ASC'], ['name', 'ASC']]
+      }]
+    });
+
+    if (!cafe) {
+      return res.status(404).json({
+        error: 'No cafe found',
+        message: 'Please make sure your account is properly set up with a cafe.'
+      });
+    }
+
+    res.json({
+      cafe: {
+        id: cafe.id,
+        name: cafe.name,
+        description: cafe.description,
+        address: cafe.address,
+        phone: cafe.phone,
+        email: cafe.email,
+        logo_url: cafe.logo_url,
+        banner_url: cafe.banner_url,
+        opening_hours: cafe.opening_hours,
+        is_active: cafe.is_active,
+        qr_code_url: cafe.qr_code_url,
+        qr_code_data: cafe.qr_code_data,
+        theme_color: cafe.theme_color,
+        currency: cafe.currency,
+        tax_rate: cafe.tax_rate,
+        service_charge: cafe.service_charge,
+        total_tables: cafe.total_tables,
+        table_configuration: cafe.table_configuration,
+        menu_items: cafe.menu_items || []
+      }
+    });
+  } catch (error) {
+    console.error('Get my cafe error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch cafe',
+      message: 'An error occurred while fetching your cafe'
+    });
+  }
+});
+
 module.exports = router;

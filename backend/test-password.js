@@ -1,38 +1,33 @@
+const bcrypt = require('bcryptjs');
 const { sequelize } = require('./src/config/database');
 const User = require('./src/models/User');
-const bcrypt = require('bcryptjs');
-require('dotenv').config();
 
 async function testPassword() {
   try {
     await sequelize.authenticate();
-    console.log('✅ Database connection established.');
+    console.log('✅ Database connected');
     
-    // Find test user
-    const testUser = await User.findOne({ where: { email: 'test@cafe.com' } });
+    // Find the test user
+    const user = await User.findOne({ where: { email: 'test@example.com' } });
     
-    if (!testUser) {
-      console.log('❌ Test user not found.');
+    if (!user) {
+      console.log('❌ User not found');
       return;
     }
     
-    console.log('User found:', testUser.email);
-    console.log('Stored password hash:', testUser.password);
+    console.log('✅ User found:', user.email);
+    console.log('Password hash:', user.password);
     
     // Test password comparison
-    const isPasswordValid = await testUser.comparePassword('password123');
-    console.log('Password comparison result:', isPasswordValid);
+    const isMatch = await user.comparePassword('password123');
+    console.log('Password match:', isMatch);
     
     // Test direct bcrypt comparison
-    const directComparison = await bcrypt.compare('password123', testUser.password);
-    console.log('Direct bcrypt comparison:', directComparison);
-    
-    // Test with wrong password
-    const wrongPassword = await testUser.comparePassword('wrongpassword');
-    console.log('Wrong password test:', wrongPassword);
+    const directMatch = await bcrypt.compare('password123', user.password);
+    console.log('Direct bcrypt match:', directMatch);
     
   } catch (error) {
-    console.error('❌ Error testing password:', error);
+    console.error('❌ Error:', error.message);
   } finally {
     await sequelize.close();
   }

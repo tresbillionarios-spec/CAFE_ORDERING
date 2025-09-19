@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Coffee, Eye, EyeOff } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -17,6 +17,11 @@ const CafeLoginPage = () => {
     cafeAddress: ''
   })
   const { login, register, loading } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  
+  // Get the redirect path from location state
+  const from = location.state?.from?.pathname || '/dashboard'
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -30,9 +35,28 @@ const CafeLoginPage = () => {
     e.preventDefault()
     
     if (isLogin) {
-      await login(formData.email, formData.password)
+      const result = await login(formData.email, formData.password)
+      if (result.success) {
+        // Redirect to the intended page or dashboard
+        navigate(from, { replace: true })
+      }
     } else {
-      await register(formData)
+      const result = await register(formData)
+      if (result.success) {
+        // Clear the form immediately after successful registration
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          phone: '',
+          cafeName: '',
+          cafeDescription: '',
+          cafeAddress: ''
+        })
+        
+        // Also switch to login mode to show the login form
+        setIsLogin(true)
+      }
     }
   }
 

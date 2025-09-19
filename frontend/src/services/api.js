@@ -22,17 +22,49 @@ api.interceptors.request.use(
   }
 )
 
-// Response interceptor
+// Response interceptor with token refresh
 api.interceptors.response.use(
   (response) => {
     return response
   },
-  (error) => {
-    if (error.response?.status === 401) {
-      // Only redirect to login if we're not already on the login page
-      if (!window.location.pathname.includes('/login')) {
-        localStorage.removeItem('token')
-        // Use a more graceful logout instead of immediate redirect
+  async (error) => {
+    const originalRequest = error.config
+    
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
+      
+      // Only attempt token refresh if we have a token and we're not on login page
+      const token = localStorage.getItem('token')
+      if (token && !window.location.pathname.includes('/login')) {
+        try {
+          // Attempt to refresh the token
+          const refreshResponse = await api.post('/auth/refresh')
+          const newToken = refreshResponse.data.token
+          
+          // Update the token in localStorage
+          localStorage.setItem('token', newToken)
+          
+          // Update the authorization header for the original request
+          originalRequest.headers.Authorization = `Bearer ${newToken}`
+          
+          // Retry the original request
+          return api(originalRequest)
+        } catch (refreshError) {
+          // If refresh fails, logout the user
+          console.error('Token refresh failed:', refreshError)
+          localStorage.removeItem('token')
+          
+          // Only redirect if we're not already on the login page
+          if (!window.location.pathname.includes('/login')) {
+            if (window.authContext) {
+              window.authContext.logout()
+            } else {
+              window.location.href = '/login'
+            }
+          }
+        }
+      } else if (!token && !window.location.pathname.includes('/login')) {
+        // No token and not on login page, redirect to login
         if (window.authContext) {
           window.authContext.logout()
         } else {
@@ -40,6 +72,7 @@ api.interceptors.response.use(
         }
       }
     }
+    
     return Promise.reject(error)
   }
 )

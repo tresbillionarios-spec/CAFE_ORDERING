@@ -7,7 +7,8 @@ import {
   Coffee,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react'
 import api from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -16,12 +17,13 @@ const CafeDashboardPage = () => {
   const { user } = useAuth()
   const cafeId = user?.cafe?.id
 
-  const { data: dashboardData, isLoading } = useQuery(
+  const { data: dashboardData, isLoading, isFetching } = useQuery(
     ['dashboard', cafeId],
     () => api.get(`/cafes/${cafeId}/dashboard`).then(res => res.data),
     {
       enabled: !!cafeId,
-      refetchInterval: 30000, // Refresh every 30 seconds
+      refetchInterval: 5000, // Refresh every 5 seconds
+      refetchIntervalInBackground: true, // Continue refreshing even when tab is not active
     }
   )
 
@@ -83,8 +85,18 @@ const CafeDashboardPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome back, {user?.name}!</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600">Welcome back, {user?.name}!</p>
+          </div>
+          {isFetching && (
+            <div className="flex items-center gap-2 text-sm text-blue-600">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>Auto-refreshing every 5 seconds</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}

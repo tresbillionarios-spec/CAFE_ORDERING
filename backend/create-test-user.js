@@ -1,38 +1,28 @@
+const bcrypt = require('bcryptjs');
 const { sequelize } = require('./src/config/database');
 const User = require('./src/models/User');
-const bcrypt = require('bcryptjs');
-require('dotenv').config();
 
 async function createTestUser() {
   try {
     await sequelize.authenticate();
-    console.log('✅ Database connection established.');
+    console.log('✅ Database connected');
     
-    // Check if test user already exists
-    const existingUser = await User.findOne({ where: { email: 'test@cafe.com' } });
-    
-    if (existingUser) {
-      console.log('ℹ️  Test user already exists:', existingUser.email);
-      return;
-    }
-    
-    // Create test user
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    // Create a test user with password "password123"
+    const hashedPassword = await bcrypt.hash('password123', 12);
     
     const testUser = await User.create({
-      name: 'Test Cafe Owner',
-      email: 'test@cafe.com',
+      name: 'Test User',
+      email: 'test@example.com',
       password: hashedPassword,
       role: 'cafe_owner'
     });
     
-    console.log('✅ Test user created successfully!');
-    console.log(`   Email: ${testUser.email}`);
-    console.log(`   Password: password123`);
-    console.log(`   Role: ${testUser.role}`);
+    console.log('✅ Test user created successfully');
+    console.log(`Email: ${testUser.email}`);
+    console.log(`Password: password123`);
     
   } catch (error) {
-    console.error('❌ Error creating test user:', error);
+    console.error('❌ Error creating test user:', error.message);
   } finally {
     await sequelize.close();
   }

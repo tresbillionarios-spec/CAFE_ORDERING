@@ -453,7 +453,7 @@ router.get('/track/:orderNumber', async (req, res) => {
         status: order.status,
         customer_name: order.customer_name,
         total_amount: order.total_amount,
-        created_at: order.created_at,
+        created_at: order.created_at || order.createdAt,
         estimated_preparation_time: order.estimated_preparation_time,
         items: order.items,
         cafe: order.cafe

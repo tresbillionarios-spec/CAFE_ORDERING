@@ -13,32 +13,32 @@ const OrderManagementPage = () => {
   const [selectedStatus, setSelectedStatus] = useState('all')
 
   // Fetch orders from API
-  const fetchOrders = async () => {
+  const fetchOrders = async (showLoading = false) => {
     if (!user?.cafe?.id) return
     
     try {
-      setLoading(true)
+      if (showLoading) setLoading(true)
       const response = await api.get(`/orders/cafe/${user.cafe.id}`)
       setOrders(response.data.orders || [])
     } catch (error) {
       console.error('Error fetching orders:', error)
       toast.error('Failed to fetch orders')
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
   // Load orders on component mount
   useEffect(() => {
     if (user?.cafe?.id) {
-      fetchOrders()
+      fetchOrders(true) // Show loading on initial load
     }
   }, [user?.cafe?.id])
 
-  // Auto-refresh orders every 30 seconds
+  // Auto-refresh orders every 5 seconds (without loading spinner)
   useEffect(() => {
     if (user?.cafe?.id) {
-      const interval = setInterval(fetchOrders, 30000)
+      const interval = setInterval(() => fetchOrders(false), 5000)
       return () => clearInterval(interval)
     }
   }, [user?.cafe?.id])
@@ -79,6 +79,44 @@ const OrderManagementPage = () => {
     }
   }
 
+  // Format date safely
+  const formatDate = (dateString) => {
+    if (!dateString) {
+      return 'No date available'
+    }
+    
+    try {
+      // Handle different date formats
+      let date
+      if (typeof dateString === 'string') {
+        // Try ISO format first
+        date = new Date(dateString)
+        if (isNaN(date.getTime())) {
+          // Try other common formats
+          date = new Date(dateString.replace(' ', 'T'))
+        }
+      } else {
+        date = new Date(dateString)
+      }
+      
+      if (isNaN(date.getTime())) {
+        return 'Invalid date format'
+      }
+      
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      })
+    } catch (error) {
+      console.error('Date formatting error:', error, 'Input:', dateString)
+      return 'Date error'
+    }
+  }
+
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
       setUpdating(true)
@@ -115,9 +153,13 @@ const OrderManagementPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Order Management</h1>
           <p className="text-gray-600">Track and manage incoming orders</p>
+          <p className="text-sm text-blue-600 mt-1 flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 animate-spin" />
+            Auto-refreshing every 5 seconds
+          </p>
         </div>
         <button
-          onClick={fetchOrders}
+          onClick={() => fetchOrders(true)}
           disabled={loading}
           className="btn-secondary flex items-center space-x-2"
         >
@@ -207,7 +249,7 @@ const OrderManagementPage = () => {
                     </p>
                   )}
                   <p className="text-sm text-gray-600">
-                    Time: {new Date(order.created_at).toLocaleTimeString()}
+                    Time: {formatDate(order.created_at || order.createdAt || order.updated_at || order.updatedAt)}
                   </p>
                 </div>
                 <div className="text-right">

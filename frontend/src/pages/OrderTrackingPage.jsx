@@ -1,20 +1,87 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from 'react-query'
-import { CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react'
+import { CheckCircle, Clock, AlertCircle, XCircle, RefreshCw } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import api from '../services/api'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 const OrderTrackingPage = () => {
   const { orderNumber } = useParams()
+  const [orderData, setOrderData] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [isFetching, setIsFetching] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(new Date())
 
-  const { data: orderData, isLoading, error } = useQuery(
-    ['order-tracking', orderNumber],
-    () => api.get(`/orders/track/${orderNumber}`).then(res => res.data),
-    {
-      enabled: !!orderNumber,
-      refetchInterval: 10000, // Refresh every 10 seconds
+  // Fetch order data
+  const fetchOrderData = async (showLoading = false) => {
+    if (!orderNumber) {
+      setError('No order number provided')
+      return
     }
-  )
+    
+    try {
+      if (showLoading) setIsLoading(true)
+      setIsFetching(true)
+      const response = await api.get(`/orders/track/${orderNumber}`)
+      setOrderData(response.data)
+      setError(null)
+      setLastUpdated(new Date())
+    } catch (err) {
+      console.error('Error fetching order:', err)
+      setError(err.response?.data?.message || 'Failed to fetch order')
+    } finally {
+      if (showLoading) setIsLoading(false)
+      setIsFetching(false)
+    }
+  }
+
+  // Initial load
+  useEffect(() => {
+    if (orderNumber) {
+      fetchOrderData(true)
+    }
+  }, [orderNumber])
+
+  // Auto-refresh every 5 seconds (without loading spinner)
+  useEffect(() => {
+    if (orderNumber) {
+      const interval = setInterval(() => fetchOrderData(false), 5000)
+      return () => clearInterval(interval)
+    }
+  }, [orderNumber])
+
+  // Manual refresh function
+  const refetch = () => fetchOrderData(true)
+
+  const formatDateTime = (input) => {
+    if (!input) return '—'
+    const tryParse = (val) => {
+      const d = new Date(val)
+      return isNaN(d) ? null : d
+    }
+
+    // Try direct parsing
+    let date = tryParse(input)
+    if (!date && typeof input === 'string') {
+      // Handle common non-ISO format: "YYYY-MM-DD HH:mm:ss"
+      date = tryParse(input.replace(' ', 'T'))
+    }
+    if (!date) {
+      const asNumber = Number(input)
+      if (!Number.isNaN(asNumber)) {
+        date = tryParse(asNumber)
+      }
+    }
+    return date ? date.toLocaleString() : '—'
+  }
+
+  const sanitizeName = (name) => {
+    const value = name || ''
+    const normalized = String(value).trim().toLowerCase()
+    if (!normalized || normalized === 'na' || normalized === 'n/a') return 'Guest'
+    return value
+  }
 
   const getStatusStep = (status) => {
     const steps = [
@@ -48,7 +115,14 @@ const OrderTrackingPage = () => {
         <div className="text-center">
           <XCircle className="mx-auto h-12 w-12 text-red-400" />
           <h2 className="mt-4 text-2xl font-bold text-gray-900">Order Not Found</h2>
-          <p className="mt-2 text-gray-600">The order you're looking for doesn't exist.</p>
+          <p className="mt-2 text-gray-600">
+            {error || 'The order you\'re looking for doesn\'t exist.'}
+          </p>
+          {orderNumber && (
+            <p className="mt-1 text-sm text-gray-500">
+              Order Number: {orderNumber}
+            </p>
+          )}
         </div>
       </div>
     )
@@ -63,10 +137,29 @@ const OrderTrackingPage = () => {
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Order #{order.order_number}
-            </h1>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Order #{order.order_number}
+              </h1>
+              <button
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                title="Refresh order status"
+              >
+                <RefreshCw className={`h-5 w-5 ${isFetching ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
             <p className="text-gray-600">{order.cafe?.name}</p>
+            {isFetching && (
+              <p className="text-sm text-blue-600 mt-2 flex items-center justify-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Auto-refreshing every 5 seconds...
+              </p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </p>
           </div>
         </div>
 
@@ -108,13 +201,13 @@ const OrderTrackingPage = () => {
           <div className="space-y-4">
             <div className="flex justify-between">
               <span className="text-gray-600">Customer:</span>
-              <span className="font-medium">{order.customer_name}</span>
+              <span className="font-medium">{sanitizeName(order.customer_name || order.customerName)}</span>
             </div>
             
             <div className="flex justify-between">
               <span className="text-gray-600">Order Time:</span>
               <span className="font-medium">
-                {new Date(order.created_at).toLocaleString()}
+                {formatDateTime(order.created_at ?? order.createdAt ?? order.updated_at ?? order.updatedAt)}
               </span>
             </div>
             

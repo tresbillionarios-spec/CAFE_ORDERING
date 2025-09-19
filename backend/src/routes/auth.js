@@ -61,7 +61,22 @@ router.post('/register', [
       name: cafeName,
       description: cafeDescription,
       address: cafeAddress,
-      owner_id: user.id
+      owner_id: user.id,
+      theme_color: '#3B82F6', // Default theme color
+      currency: 'INR', // Default currency
+      tax_rate: 0.00, // Default tax rate
+      service_charge: 0.00, // Default service charge
+      total_tables: 0, // Default total tables
+      table_configuration: JSON.stringify([]), // Default empty table configuration
+      opening_hours: JSON.stringify({
+        monday: { open: '08:00', close: '18:00', closed: false },
+        tuesday: { open: '08:00', close: '18:00', closed: false },
+        wednesday: { open: '08:00', close: '18:00', closed: false },
+        thursday: { open: '08:00', close: '18:00', closed: false },
+        friday: { open: '08:00', close: '18:00', closed: false },
+        saturday: { open: '09:00', close: '17:00', closed: false },
+        sunday: { open: '09:00', close: '17:00', closed: false }
+      })
     });
 
     // Generate token

@@ -73,10 +73,29 @@ export const AuthProvider = ({ children }) => {
           })
         } catch (error) {
           console.error('Auth check failed:', error)
-          // Only logout if it's a real authentication error, not a network error
+          // Only logout if it's a real authentication error (401) and not a network error
           if (error.response?.status === 401) {
-            localStorage.removeItem('token')
-            dispatch({ type: 'LOGOUT' })
+            // Try to refresh the token first
+            try {
+              const refreshResponse = await api.post('/auth/refresh')
+              const newToken = refreshResponse.data.token
+              localStorage.setItem('token', newToken)
+              
+              // Try to get user data again with new token
+              const userResponse = await api.get('/auth/me')
+              dispatch({
+                type: 'LOGIN_SUCCESS',
+                payload: {
+                  user: userResponse.data.user,
+                  token: newToken
+                }
+              })
+            } catch (refreshError) {
+              // If refresh also fails, then logout
+              console.error('Token refresh failed:', refreshError)
+              localStorage.removeItem('token')
+              dispatch({ type: 'LOGOUT' })
+            }
           } else {
             // For network errors, keep the token and try again later
             dispatch({ type: 'SET_LOADING', payload: false })
@@ -104,7 +123,6 @@ export const AuthProvider = ({ children }) => {
       })
       
       toast.success('Login successful!')
-      navigate('/dashboard')
       return { success: true }
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed'
@@ -119,16 +137,16 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: true })
       const response = await api.post('/auth/register', userData)
       
-      const { user, token } = response.data
-      localStorage.setItem('token', token)
+      // Don't automatically log in the user after registration
+      // Just show success message and redirect to login page
+      dispatch({ type: 'SET_LOADING', payload: false })
+      toast.success('Registration successful! Please login with your credentials.')
       
-      dispatch({
-        type: 'LOGIN_SUCCESS',
-        payload: { user, token }
-      })
+      // Use window.location for more reliable redirection
+      setTimeout(() => {
+        window.location.href = '/login'
+      }, 500)
       
-      toast.success('Registration successful!')
-      navigate('/dashboard')
       return { success: true }
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed'
@@ -152,6 +170,33 @@ export const AuthProvider = ({ children }) => {
       delete window.authContext
     }
   }, [])
+
+  // Periodic token refresh to prevent expiration
+  useEffect(() => {
+    if (state.isAuthenticated && state.token) {
+      const refreshInterval = setInterval(async () => {
+        try {
+          const response = await api.post('/auth/refresh')
+          const newToken = response.data.token
+          localStorage.setItem('token', newToken)
+          
+          dispatch({
+            type: 'LOGIN_SUCCESS',
+            payload: {
+              user: state.user,
+              token: newToken
+            }
+          })
+          console.log('Token refreshed successfully')
+        } catch (error) {
+          console.error('Periodic token refresh failed:', error)
+          // Don't logout immediately, let the API interceptor handle it
+        }
+      }, 24 * 60 * 60 * 1000) // Refresh every 24 hours
+
+      return () => clearInterval(refreshInterval)
+    }
+  }, [state.isAuthenticated, state.token, state.user])
 
   const updateProfile = async (profileData) => {
     try {

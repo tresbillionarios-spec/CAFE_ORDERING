@@ -18,11 +18,15 @@ const PORT = process.env.PORT || 5001;
 // Security middleware
 app.use(helmet());
 
-// Rate limiting
+// Rate limiting - More lenient for development with auto-refresh
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
+  max: 2000, // Increased limit to accommodate auto-refresh (2 seconds = 1800 requests per 15 minutes)
+  message: 'Too many requests from this IP, please try again later.',
+  skip: (req) => {
+    // Skip rate limiting for health checks and auth endpoints
+    return req.path === '/health' || req.path.startsWith('/api/auth/')
+  }
 });
 app.use('/api/', limiter);
 

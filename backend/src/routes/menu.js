@@ -25,6 +25,43 @@ router.get('/cafe/:cafeId', authenticateToken, requireCafeOwnership, async (req,
   }
 });
 
+// Get current user's menu items (cafe owner only)
+router.get('/my', authenticateToken, requireCafeOwner, async (req, res) => {
+  try {
+    // First get the user's cafe
+    const cafe = await Cafe.findOne({
+      where: { owner_id: req.user.id }
+    });
+
+    if (!cafe) {
+      return res.status(404).json({
+        error: 'No cafe found',
+        message: 'Please make sure your account is properly set up with a cafe.'
+      });
+    }
+
+    const menuItems = await Menu.findAll({
+      where: { cafe_id: cafe.id },
+      order: [['sort_order', 'ASC'], ['category', 'ASC'], ['name', 'ASC']]
+    });
+
+    res.json({
+      cafe: {
+        id: cafe.id,
+        name: cafe.name,
+        description: cafe.description
+      },
+      menu_items: menuItems
+    });
+  } catch (error) {
+    console.error('Get my menu items error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch menu items',
+      message: 'An error occurred while fetching menu items'
+    });
+  }
+});
+
 // Add new menu item (cafe owner only)
 router.post('/', authenticateToken, requireCafeOwner, [
   body('name').trim().isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
@@ -53,26 +90,21 @@ router.post('/', authenticateToken, requireCafeOwner, [
       });
     }
 
-    const cafeId = req.body.cafe_id;
-    
-    // Verify cafe ownership
+    // Get the user's cafe
     const cafe = await Cafe.findOne({
-      where: { 
-        id: cafeId,
-        owner_id: req.user.id 
-      }
+      where: { owner_id: req.user.id }
     });
 
     if (!cafe) {
-      return res.status(403).json({
-        error: 'Access denied',
-        message: 'You do not have permission to add menu items to this cafe'
+      return res.status(404).json({
+        error: 'No cafe found',
+        message: 'Please make sure your account is properly set up with a cafe.'
       });
     }
 
     const menuItem = await Menu.create({
       ...req.body,
-      cafe_id: cafeId
+      cafe_id: cafe.id
     });
 
     res.status(201).json({
