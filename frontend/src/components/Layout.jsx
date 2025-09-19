@@ -11,7 +11,8 @@ import {
   X,
   Coffee,
   Table,
-  QrCode
+  QrCode,
+  BarChart3
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -24,6 +25,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Menu Management', href: '/menu-management', icon: Menu },
     { name: 'Orders', href: '/orders', icon: ShoppingCart },
+    { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'Tables', href: '/tables', icon: Table },
     { name: 'QR Codes', href: '/qr-codes', icon: QrCode },
     { name: 'Profile', href: '/profile', icon: User },

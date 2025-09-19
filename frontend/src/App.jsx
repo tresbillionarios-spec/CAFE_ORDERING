@@ -1,3 +1,4 @@
+import React from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import PrivateRoute from './components/PrivateRoute'
@@ -19,8 +20,10 @@ import QRCodeManagementPage from './pages/QRCodeManagementPage'
 import QRCodeDemoPage from './pages/QRCodeDemoPage'
 import CafeProfilePage from './pages/CafeProfilePage'
 import CafeCreationPage from './pages/CafeCreationPage'
+import ReportsPage from './pages/ReportsPage'
 
 function App() {
+
   return (
     <AuthProvider>
       <Routes>
@@ -83,6 +86,13 @@ function App() {
           <PrivateRoute>
             <Layout>
               <QRCodeDemoPage />
+            </Layout>
+          </PrivateRoute>
+        } />
+        <Route path="/reports" element={
+          <PrivateRoute>
+            <Layout>
+              <ReportsPage />
             </Layout>
           </PrivateRoute>
         } />

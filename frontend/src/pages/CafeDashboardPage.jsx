@@ -27,14 +27,6 @@ const CafeDashboardPage = () => {
     }
   )
 
-  const { data: qrCode } = useQuery(
-    ['qr-code', cafeId],
-    () => api.post(`/cafes/${cafeId}/qr`).then(res => res.data),
-    {
-      enabled: !!cafeId,
-      staleTime: 24 * 60 * 60 * 1000, // 24 hours
-    }
-  )
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -160,29 +152,6 @@ const CafeDashboardPage = () => {
         </div>
       </div>
 
-      {/* QR Code Section */}
-      {qrCode && (
-        <div className="card">
-          <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900">Your QR Code</h3>
-            <p className="text-sm text-gray-500">Customers can scan this to view your menu</p>
-          </div>
-          <div className="card-body">
-            <div className="flex items-center justify-center">
-              <div className="text-center">
-                <img
-                  src={qrCode.qr_code.image}
-                  alt="QR Code"
-                  className="mx-auto h-48 w-48 border-2 border-gray-200 rounded-lg"
-                />
-                <p className="mt-4 text-sm text-gray-600">
-                  Order Number: {qrCode.qr_code.data}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Recent Orders */}
       <div className="card">
