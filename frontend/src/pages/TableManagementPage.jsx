@@ -56,7 +56,15 @@ const TableManagementPage = () => {
       setCreateLoading(true)
       setError(null)
       
-      const response = await tableAPI.createTables(userCafe.id, formData)
+      // Ensure all numeric values are properly converted to integers
+      const validatedData = {
+        total_tables: parseInt(formData.total_tables) || 1,
+        start_number: parseInt(formData.start_number) || 1,
+        capacity: parseInt(formData.capacity) || 4,
+        location: formData.location || 'Main Area'
+      }
+      
+      const response = await tableAPI.createTables(userCafe.id, validatedData)
       
       // Add new tables to the list
       setTables(prev => [...prev, ...response.data.tables])

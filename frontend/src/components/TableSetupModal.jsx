@@ -59,8 +59,16 @@ const TableSetupModal = ({ isOpen, onClose, onSave, cafeId, loading }) => {
 
     setIsGenerating(true)
     try {
+      // Ensure all numeric values are properly converted to integers
+      const validatedData = {
+        total_tables: parseInt(formData.table_count) || 1,
+        start_number: parseInt(formData.start_number) || 1,
+        capacity: parseInt(formData.capacity) || 4,
+        location: formData.location || 'Main Area'
+      }
+      
       // Call the API to generate tables with QR codes
-      const response = await api.post(`/tables/cafe/${cafeId}/bulk`, formData)
+      const response = await api.post(`/tables/cafe/${cafeId}/bulk`, validatedData)
       
       setGeneratedTables(response.data.tables)
       toast.success(`Generated ${response.data.tables.length} tables with QR codes!`)

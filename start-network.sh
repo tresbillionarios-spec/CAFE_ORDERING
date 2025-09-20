@@ -147,7 +147,7 @@ echo -e "${BLUE}• Open your mobile browser and go to:${NC} http://${LOCAL_IP}:
 echo -e "${BLUE}• Make sure your mobile device is on the same WiFi network${NC}"
 echo ""
 echo -e "${YELLOW}📋 Test Accounts:${NC}"
-echo -e "${BLUE}• Email:${NC} admin@example.com"
+echo -e "${BLUE}• Email:${NC} admin@qrordering.com"
 echo -e "${BLUE}• Password:${NC} password123"
 echo ""
 echo -e "${YELLOW}🛑 To stop all services, press Ctrl+C${NC}"
