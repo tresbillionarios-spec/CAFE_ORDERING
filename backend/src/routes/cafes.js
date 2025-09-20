@@ -123,7 +123,7 @@ router.put('/:id', authenticateToken, requireCafeOwnership, [
 // Generate QR code for cafe
 router.post('/:id/qr', authenticateToken, requireCafeOwnership, async (req, res) => {
   try {
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const qrData = `${frontendUrl}/menu/${req.cafe.id}`;
     
     // Generate QR code as data URL

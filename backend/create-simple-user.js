@@ -15,7 +15,7 @@ async function createSimpleUser() {
     `, {
       replacements: [
         require('uuid').v4(),
-        'admin@example.com',
+        'admin@qrordering.com',
         hashedPassword,
         'Admin User',
         'cafe_owner',
@@ -26,7 +26,7 @@ async function createSimpleUser() {
     });
     
     console.log('✅ Simple user created successfully');
-    console.log('Email: admin@example.com');
+    console.log('Email: admin@qrordering.com');
     console.log('Password: password123');
     
   } catch (error) {

@@ -56,6 +56,33 @@ router.post('/cafe/:cafeId/bulk', authenticateToken, requireCafeOwnership, [
     const { total_tables, start_number = 1, capacity = 4, location = 'Main Area' } = req.body;
     const cafeId = req.params.cafeId;
 
+    // Ensure all numeric values are properly converted to integers
+    const validatedTotalTables = parseInt(total_tables);
+    const validatedStartNumber = parseInt(start_number);
+    const validatedCapacity = parseInt(capacity);
+
+    // Additional validation to ensure values are valid integers
+    if (isNaN(validatedTotalTables) || validatedTotalTables < 1) {
+      return res.status(400).json({
+        error: 'Invalid total_tables',
+        message: 'Total tables must be a positive integer'
+      });
+    }
+
+    if (isNaN(validatedStartNumber) || validatedStartNumber < 1) {
+      return res.status(400).json({
+        error: 'Invalid start_number',
+        message: 'Start number must be a positive integer'
+      });
+    }
+
+    if (isNaN(validatedCapacity) || validatedCapacity < 1 || validatedCapacity > 20) {
+      return res.status(400).json({
+        error: 'Invalid capacity',
+        message: 'Capacity must be between 1 and 20'
+      });
+    }
+
     // Check if cafe exists
     const cafe = await Cafe.findByPk(cafeId);
     if (!cafe) {
@@ -75,8 +102,8 @@ router.post('/cafe/:cafeId/bulk', authenticateToken, requireCafeOwnership, [
     const newTables = [];
 
     // Create tables
-    for (let i = 0; i < total_tables; i++) {
-      const tableNumber = start_number + i;
+    for (let i = 0; i < validatedTotalTables; i++) {
+      const tableNumber = validatedStartNumber + i;
       
       // Skip if table number already exists
       if (existingNumbers.includes(tableNumber)) {
@@ -84,7 +111,7 @@ router.post('/cafe/:cafeId/bulk', authenticateToken, requireCafeOwnership, [
       }
 
       // Generate QR code for table
-      const qrData = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/menu/${cafeId}?table=${tableNumber}`;
+      const qrData = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${cafeId}?table=${tableNumber}`;
       const qrCodeDataUrl = await QRCode.toDataURL(qrData, {
         errorCorrectionLevel: 'M',
         type: 'image/png',
@@ -100,7 +127,7 @@ router.post('/cafe/:cafeId/bulk', authenticateToken, requireCafeOwnership, [
         cafe_id: cafeId,
         table_number: tableNumber,
         table_name: `Table ${tableNumber}`,
-        capacity: capacity,
+        capacity: validatedCapacity,
         location: location,
         qr_code_data: qrCodeDataUrl,
         qr_code_url: qrData,
@@ -323,7 +350,7 @@ router.post('/:id/regenerate-qr', authenticateToken, async (req, res) => {
     }
 
     // Generate new QR code data
-    const qrData = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/menu/${table.cafe_id}?table=${table.table_number}`;
+    const qrData = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/menu/${table.cafe_id}?table=${table.table_number}`;
     
     // Generate new QR code image
     const qrImage = await QRCode.toDataURL(qrData, {

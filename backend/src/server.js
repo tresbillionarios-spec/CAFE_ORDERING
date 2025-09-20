@@ -34,9 +34,9 @@ app.use('/api/', limiter);
 
 // CORS configuration
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://192.168.1.9:5173',
-  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'http://192.168.1.9:3000',
+  'http://127.0.0.1:3000',
   'https://qr-scanner-trios-frontend.onrender.com',
   'https://qr-scanner-trios-frontend.render.com',
   'http://192.168.1.9:3000',
@@ -283,7 +283,7 @@ async function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📱 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-      console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`);
+      console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:3000'}`);
     });
   } catch (error) {
     console.error('❌ Unable to start server:', error);
