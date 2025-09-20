@@ -1,7 +1,15 @@
 import { Link } from 'react-router-dom'
 import { Coffee, QrCode, Smartphone, TrendingUp } from 'lucide-react'
+import OnboardingGuide from '../components/OnboardingGuide'
 
 const HomePage = () => {
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white">
       {/* Header */}
@@ -43,12 +51,12 @@ const HomePage = () => {
               >
                 Get Started
               </Link>
-              <a
-                href="#features"
+              <button
+                onClick={() => scrollToSection('onboarding-guide')}
                 className="text-lg font-semibold leading-6 text-gray-900 hover:text-primary-600"
               >
-                Learn more <span aria-hidden="true">→</span>
-              </a>
+                How it Works <span aria-hidden="true">→</span>
+              </button>
             </div>
           </div>
         </div>
@@ -107,6 +115,11 @@ const HomePage = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Onboarding Guide Section */}
+        <div id="onboarding-guide">
+          <OnboardingGuide />
         </div>
 
         {/* CTA Section */}
