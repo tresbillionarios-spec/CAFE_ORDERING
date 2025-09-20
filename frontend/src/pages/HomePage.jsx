@@ -10,7 +10,7 @@ const HomePage = () => {
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center">
               <Coffee className="h-8 w-8 text-primary-600" />
-              <span className="ml-2 text-2xl font-bold text-gray-900">QR Ordering</span>
+              <span className="ml-2 text-2xl font-bold text-gray-900">OrdeRKaro</span>
             </div>
             <div className="flex items-center space-x-4">
               <Link
@@ -30,10 +30,10 @@ const HomePage = () => {
           <div className="py-20 text-center">
             <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
               Transform Your Cafe with
-              <span className="text-primary-600"> QR Ordering</span>
+              <span className="text-primary-600"> OrdeRKaro</span>
             </h1>
             <p className="mt-6 text-lg leading-8 text-gray-600 max-w-3xl mx-auto">
-              Streamline your cafe operations with our innovative QR code ordering system. 
+              Streamline your cafe operations with OrdeRKaro's innovative QR code ordering system. 
               Let customers scan, order, and enjoy - all from their smartphones.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">

@@ -35,4 +35,4 @@ services:
 
 networks:
   default:
-    name: qr-ordering-network
+    name: orderkaro-network

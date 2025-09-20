@@ -12,7 +12,15 @@ import {
   Coffee,
   Table,
   QrCode,
-  BarChart3
+  BarChart3,
+  Shield,
+  Package,
+  Users,
+  DollarSign,
+  FileText,
+  HelpCircle,
+  Settings,
+  Utensils
 } from 'lucide-react'
 
 const Layout = ({ children }) => {
@@ -21,15 +29,37 @@ const Layout = ({ children }) => {
   const location = useLocation()
   const navigate = useNavigate()
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Menu Management', href: '/menu-management', icon: Menu },
-    { name: 'Orders', href: '/orders', icon: ShoppingCart },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'Tables', href: '/tables', icon: Table },
-    { name: 'QR Codes', href: '/qr-codes', icon: QrCode },
-    { name: 'Profile', href: '/profile', icon: User },
-  ]
+  const getNavigation = () => {
+    const baseNavigation = [
+      { name: 'Dashboard', href: '/dashboard', icon: Home },
+      { name: 'Menu Management', href: '/menu-management', icon: Menu },
+      { name: 'Orders', href: '/orders', icon: ShoppingCart },
+      { name: 'Reports', href: '/reports', icon: BarChart3 },
+      { name: 'Tables', href: '/tables', icon: Table },
+      { name: 'QR Codes', href: '/qr-codes', icon: QrCode },
+      { name: 'Support & Help', href: '/support', icon: HelpCircle },
+      { name: 'Profile', href: '/profile', icon: User },
+    ]
+
+    // Add admin-specific navigation
+    if (user?.role === 'admin') {
+      return [
+        { name: 'Dashboard', href: '/admin/dashboard', icon: Home },
+        { name: 'Café Management', href: '/admin/cafe-management', icon: Coffee },
+        { name: 'Order Management', href: '/admin/order-management', icon: Package },
+        { name: 'Menu & Inventory', href: '/admin/menu-inventory', icon: Utensils },
+        { name: 'User Management', href: '/admin/user-management', icon: Users },
+        { name: 'Finance & Settlements', href: '/admin/finance', icon: DollarSign },
+        { name: 'System Settings', href: '/admin/settings', icon: Settings },
+        { name: 'Support & Compliance', href: '/admin/support', icon: HelpCircle },
+        { name: 'Profile', href: '/profile', icon: User },
+      ]
+    }
+
+    return baseNavigation
+  }
+
+  const navigation = getNavigation()
 
   const handleLogout = () => {
     logout()
@@ -45,7 +75,7 @@ const Layout = ({ children }) => {
           <div className="flex h-16 items-center justify-between px-4">
             <div className="flex items-center">
               <Coffee className="h-8 w-8 text-primary-600" />
-              <span className="ml-2 text-xl font-semibold text-gray-900">QR Ordering</span>
+              <span className="ml-2 text-xl font-semibold text-gray-900">OrdeRKaro</span>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -104,7 +134,7 @@ const Layout = ({ children }) => {
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           <div className="flex h-16 items-center px-4">
             <Coffee className="h-8 w-8 text-primary-600" />
-            <span className="ml-2 text-xl font-semibold text-gray-900">QR Ordering</span>
+            <span className="ml-2 text-xl font-semibold text-gray-900">OrdeRKaro</span>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
@@ -164,7 +194,7 @@ const Layout = ({ children }) => {
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex items-center">
               <Coffee className="h-6 w-6 text-primary-600" />
-              <span className="ml-2 text-lg font-semibold text-gray-900">QR Ordering</span>
+              <span className="ml-2 text-lg font-semibold text-gray-900">OrdeRKaro</span>
             </div>
           </div>
         </div>
