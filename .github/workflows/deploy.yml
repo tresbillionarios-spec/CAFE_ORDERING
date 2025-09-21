@@ -56,11 +56,18 @@ jobs:
 
       - name: Deploy to Lightsail
         run: |
-          # Deploy the container to Lightsail with minimal configuration
+          # Set environment variables based on app type
+          if [ "${{ matrix.app }}" = "frontend" ]; then
+            ENV_VARS='{"NODE_ENV":"production","PORT":"'${{ matrix.port }}'","VITE_API_URL":"https://orderkaro.co.in/api"}'
+          else
+            ENV_VARS='{"NODE_ENV":"production","PORT":"'${{ matrix.port }}'","CORS_ORIGIN":"https://orderkaro.co.in","FRONTEND_URL":"https://orderkaro.co.in","JWT_SECRET":"your-super-secret-jwt-key","DB_HOST":"localhost","DB_PORT":"5432","DB_NAME":"qr_ordering_db","DB_USER":"postgres","DB_PASSWORD":"password"}'
+          fi
+          
+          # Deploy the container to Lightsail with environment variables
           aws lightsail create-container-service-deployment \
             --service-name ${{ matrix.service_name }} \
             --public-endpoint "{\"containerName\":\"${{ matrix.app }}\",\"containerPort\":${{ matrix.port }},\"healthCheck\":{\"path\":\"/health\"}}" \
-            --containers "{\"${{ matrix.app }}\":{\"image\":\"${{ steps.build-image.outputs.image }}\",\"ports\":{\"${{ matrix.port }}\":\"HTTP\"}}}" \
+            --containers "{\"${{ matrix.app }}\":{\"image\":\"${{ steps.build-image.outputs.image }}\",\"ports\":{\"${{ matrix.port }}\":\"HTTP\"},\"environment\":$ENV_VARS}}" \
             --region ${{ env.AWS_REGION }}
 
       - name: Wait for deployment
@@ -86,7 +93,7 @@ jobs:
       - name: Configure Environment Variables
         run: |
           echo "🔧 Environment variables will be configured in the Docker containers"
-          echo "📋 Frontend environment: NODE_ENV=production, PORT=${{ matrix.port }}, VITE_API_URL=http://qr-scanner-backend:5001/api"
+          echo "📋 Frontend environment: NODE_ENV=production, PORT=${{ matrix.port }}, VITE_API_URL=https://orderkaro.co.in/api"
           echo "📋 Backend environment: NODE_ENV=production, PORT=${{ matrix.port }}, DB_HOST=localhost, JWT_SECRET=your-jwt-secret-key"
           echo "🌐 CORS_ORIGIN: https://orderkaro.co.in"
 
