@@ -17,12 +17,11 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        cache: 'npm'
         
     - name: Install dependencies and run tests
       run: |
         cd backend
-        npm ci
+        npm install
         # Add your tests here if you have them
         # npm test
         
