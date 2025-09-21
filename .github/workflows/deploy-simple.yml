@@ -1,4 +1,4 @@
-name: Deploy to AWS Lightsail - From Existing Config
+name: Deploy to AWS Lightsail - Simple
 
 on:
   push:
@@ -20,13 +20,11 @@ jobs:
             context: frontend
             port: 80
             service_name: qr-scanner-frontend
-            container_name: frontend
           - app: backend
             dockerfile: backend/Dockerfile
             context: backend
             port: 5001
             service_name: qr-scanner-backend
-            container_name: backend
 
     steps:
       - name: Checkout code
@@ -60,7 +58,7 @@ jobs:
           echo "📦 Image: ${{ steps.build-image.outputs.image }}"
           echo "🌐 Domain: orderkaro.co.in"
           
-          # Create deployment configuration based on existing setup
+          # Create deployment configuration file
           if [ "${{ matrix.app }}" = "frontend" ]; then
             cat > deployment-config.json << 'EOF'
           {
@@ -68,25 +66,19 @@ jobs:
               "containerName": "frontend",
               "containerPort": 80,
               "healthCheck": {
-                "healthyThreshold": 2,
-                "unhealthyThreshold": 2,
-                "timeoutSeconds": 2,
-                "intervalSeconds": 5,
-                "path": "/health",
-                "successCodes": "200-499"
+                "path": "/health"
               }
             },
             "containers": {
               "frontend": {
                 "image": "${{ steps.build-image.outputs.image }}",
-                "command": [],
+                "ports": {
+                  "80": "HTTP"
+                },
                 "environment": {
                   "NODE_ENV": "production",
                   "PORT": "80",
                   "VITE_API_URL": "https://orderkaro.co.in/api"
-                },
-                "ports": {
-                  "80": "HTTP"
                 }
               }
             }
@@ -99,18 +91,15 @@ jobs:
               "containerName": "backend",
               "containerPort": 5001,
               "healthCheck": {
-                "healthyThreshold": 2,
-                "unhealthyThreshold": 2,
-                "timeoutSeconds": 2,
-                "intervalSeconds": 5,
-                "path": "/health",
-                "successCodes": "200-499"
+                "path": "/health"
               }
             },
             "containers": {
               "backend": {
                 "image": "${{ steps.build-image.outputs.image }}",
-                "command": [],
+                "ports": {
+                  "5001": "HTTP"
+                },
                 "environment": {
                   "NODE_ENV": "production",
                   "PORT": "5001",
@@ -122,9 +111,6 @@ jobs:
                   "DB_NAME": "qr_ordering_db",
                   "DB_USER": "postgres",
                   "DB_PASSWORD": "password"
-                },
-                "ports": {
-                  "5001": "HTTP"
                 }
               }
             }
