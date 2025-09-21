@@ -1,4 +1,4 @@
-name: Deploy to AWS Lightsail - Fixed
+name: Deploy to AWS Lightsail - Simple
 
 on:
   push:
@@ -20,13 +20,11 @@ jobs:
             context: frontend
             port: 80
             service_name: qr-scanner-frontend
-            domain: orderkaro.co.in
           - app: backend
             dockerfile: backend/Dockerfile
             context: backend
             port: 5001
             service_name: qr-scanner-backend
-            domain: api.orderkaro.co.in
 
     steps:
       - name: Checkout code
@@ -62,24 +60,24 @@ jobs:
           
           # Create deployment configuration file
           if [ "${{ matrix.app }}" = "frontend" ]; then
-            cat > deployment-config.json << EOF
+            cat > deployment-config.json << 'EOF'
           {
             "publicEndpoint": {
-              "containerName": "${{ matrix.app }}",
-              "containerPort": ${{ matrix.port }},
+              "containerName": "frontend",
+              "containerPort": 80,
               "healthCheck": {
                 "path": "/health"
               }
             },
             "containers": {
-              "${{ matrix.app }}": {
+              "frontend": {
                 "image": "${{ steps.build-image.outputs.image }}",
                 "ports": {
-                  "${{ matrix.port }}": "HTTP"
+                  "80": "HTTP"
                 },
                 "environment": {
                   "NODE_ENV": "production",
-                  "PORT": "${{ matrix.port }}",
+                  "PORT": "80",
                   "VITE_API_URL": "https://orderkaro.co.in/api"
                 }
               }
@@ -87,24 +85,24 @@ jobs:
           }
           EOF
           else
-            cat > deployment-config.json << EOF
+            cat > deployment-config.json << 'EOF'
           {
             "publicEndpoint": {
-              "containerName": "${{ matrix.app }}",
-              "containerPort": ${{ matrix.port }},
+              "containerName": "backend",
+              "containerPort": 5001,
               "healthCheck": {
                 "path": "/health"
               }
             },
             "containers": {
-              "${{ matrix.app }}": {
+              "backend": {
                 "image": "${{ steps.build-image.outputs.image }}",
                 "ports": {
-                  "${{ matrix.port }}": "HTTP"
+                  "5001": "HTTP"
                 },
                 "environment": {
                   "NODE_ENV": "production",
-                  "PORT": "${{ matrix.port }}",
+                  "PORT": "5001",
                   "CORS_ORIGIN": "https://orderkaro.co.in",
                   "FRONTEND_URL": "https://orderkaro.co.in",
                   "JWT_SECRET": "your-super-secret-jwt-key",
@@ -149,13 +147,6 @@ jobs:
             fi
           done
 
-      - name: Configure Environment Variables
-        run: |
-          echo "🔧 Environment variables will be configured in the Docker containers"
-          echo "📋 Frontend environment: NODE_ENV=production, PORT=${{ matrix.port }}, VITE_API_URL=https://orderkaro.co.in/api"
-          echo "📋 Backend environment: NODE_ENV=production, PORT=${{ matrix.port }}, DB_HOST=localhost, JWT_SECRET=your-jwt-secret-key"
-          echo "🌐 CORS_ORIGIN: https://orderkaro.co.in"
-
       - name: Get service URL
         id: get-url
         run: |
@@ -184,21 +175,10 @@ jobs:
             fi
           done
 
-      - name: Configure Custom Domain
-        if: matrix.app == 'frontend'
+      - name: Display Results
         run: |
-          # Create SSL certificate for orderkaro.co.in
-          aws lightsail create-certificate \
-            --certificate-name orderkaro-co-in-cert \
-            --domain-name orderkaro.co.in \
-            --region ${{ env.AWS_REGION }} || echo "Certificate may already exist"
-          
-          echo "🌐 Frontend will be available at: https://orderkaro.co.in"
-          echo "🔧 Backend API will be available at: https://api.orderkaro.co.in"
-          echo "📊 Health check: https://orderkaro.co.in/health"
-          echo ""
-          echo "📋 DNS Configuration Required:"
-          echo "Add these DNS records to your orderkaro.co.in domain:"
-          echo "1. A Record: @ → [Load Balancer IP]"
-          echo "2. CNAME Record: api → [Load Balancer DNS]"
-          echo "3. CNAME Record: www → orderkaro.co.in"
+          echo "🎉 Deployment completed!"
+          echo "🌐 Frontend: https://qr-scanner-frontend.cw27w5415mg9y.us-east-1.cs.amazonlightsail.com/"
+          echo "🔧 Backend: https://qr-scanner-backend.cw27w5415mg9y.us-east-1.cs.amazonlightsail.com/"
+          echo "🌐 Your Domain: https://orderkaro.co.in"
+          echo "📊 API: https://orderkaro.co.in/api"
