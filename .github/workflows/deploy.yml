@@ -56,18 +56,69 @@ jobs:
 
       - name: Deploy to Lightsail
         run: |
-          # Set environment variables for the container
+          # Create deployment configuration file
           if [ "${{ matrix.app }}" = "frontend" ]; then
-            ENV_VARS='{"NODE_ENV":"production","PORT":"'${{ matrix.port }}'","VITE_API_URL":"http://qr-scanner-backend:5001/api"}'
+            cat > deployment-config.json << EOF
+          {
+            "publicEndpoint": {
+              "containerName": "${{ matrix.app }}",
+              "containerPort": ${{ matrix.port }},
+              "healthCheck": {
+                "path": "/health"
+              }
+            },
+            "containers": {
+              "${{ matrix.app }}": {
+                "image": "${{ steps.build-image.outputs.image }}",
+                "ports": {
+                  "${{ matrix.port }}": "HTTP"
+                },
+                "environment": {
+                  "NODE_ENV": "production",
+                  "PORT": "${{ matrix.port }}",
+                  "VITE_API_URL": "http://qr-scanner-backend:5001/api"
+                }
+              }
+            }
+          }
+          EOF
           else
-            ENV_VARS='{"NODE_ENV":"production","PORT":"'${{ matrix.port }}'","DB_HOST":"localhost","DB_PORT":"5432","DB_NAME":"qrscanner","DB_USER":"postgres","DB_PASSWORD":"password","JWT_SECRET":"your-jwt-secret-key","CORS_ORIGIN":"https://orderkaro.co.in"}'
+            cat > deployment-config.json << EOF
+          {
+            "publicEndpoint": {
+              "containerName": "${{ matrix.app }}",
+              "containerPort": ${{ matrix.port }},
+              "healthCheck": {
+                "path": "/health"
+              }
+            },
+            "containers": {
+              "${{ matrix.app }}": {
+                "image": "${{ steps.build-image.outputs.image }}",
+                "ports": {
+                  "${{ matrix.port }}": "HTTP"
+                },
+                "environment": {
+                  "NODE_ENV": "production",
+                  "PORT": "${{ matrix.port }}",
+                  "DB_HOST": "localhost",
+                  "DB_PORT": "5432",
+                  "DB_NAME": "qrscanner",
+                  "DB_USER": "postgres",
+                  "DB_PASSWORD": "password",
+                  "JWT_SECRET": "your-jwt-secret-key",
+                  "CORS_ORIGIN": "https://orderkaro.co.in"
+                }
+              }
+            }
+          }
+          EOF
           fi
           
-          # Deploy the container to Lightsail
+          # Deploy the container to Lightsail using the config file
           aws lightsail create-container-service-deployment \
             --service-name ${{ matrix.service_name }} \
-            --public-endpoint containerName=${{ matrix.app }},containerPort=${{ matrix.port }},healthCheckPath=/health \
-            --containers "{\"${{ matrix.app }}\":{\"image\":\"${{ steps.build-image.outputs.image }}\",\"ports\":{\"${{ matrix.port }}\":\"HTTP\"},\"environment\":$ENV_VARS}}" \
+            --cli-input-json file://deployment-config.json \
             --region ${{ env.AWS_REGION }}
 
       - name: Wait for deployment
