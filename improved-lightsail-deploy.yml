@@ -1,0 +1,233 @@
+name: Deploy to AWS Lightsail Container Service
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+        
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+      
+    - name: Build, tag, and push image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: qr-scanner-backend
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        # Build the Docker image
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        
+        # Push the image to ECR
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        
+        # Output the image URI for the deployment
+        echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+        
+    - name: Wait for any existing deployment to complete
+      run: |
+        echo "🔍 Checking for existing deployments..."
+        
+        # Get current deployment status
+        DEPLOYMENT_STATUS=$(aws lightsail get-container-service-deployments \
+          --service-name qr-scanner-backend \
+          --region us-east-1 \
+          --query 'deployments[0].state' \
+          --output text 2>/dev/null || echo "UNKNOWN")
+        
+        echo "Current deployment status: $DEPLOYMENT_STATUS"
+        
+        # Wait for deployment to complete if it's in progress
+        if [ "$DEPLOYMENT_STATUS" = "RUNNING" ] || [ "$DEPLOYMENT_STATUS" = "PENDING" ]; then
+          echo "⏳ Waiting for existing deployment to complete..."
+          
+          TIMEOUT=600
+          ELAPSED=0
+          while [ "$DEPLOYMENT_STATUS" = "RUNNING" ] || [ "$DEPLOYMENT_STATUS" = "PENDING" ]; do
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "❌ Deployment timeout reached"
+              exit 1
+            fi
+            
+            echo "Waiting... (${ELAPSED}s/${TIMEOUT}s)"
+            sleep 30
+            ELAPSED=$((ELAPSED + 30))
+            
+            DEPLOYMENT_STATUS=$(aws lightsail get-container-service-deployments \
+              --service-name qr-scanner-backend \
+              --region us-east-1 \
+              --query 'deployments[0].state' \
+              --output text 2>/dev/null || echo "UNKNOWN")
+          done
+          
+          echo "✅ Previous deployment completed with status: $DEPLOYMENT_STATUS"
+        fi
+        
+        # Check if deployment failed
+        if [ "$DEPLOYMENT_STATUS" = "FAILED" ]; then
+          echo "❌ Previous deployment failed. Checking logs..."
+          aws lightsail get-container-service-deployments \
+            --service-name qr-scanner-backend \
+            --region us-east-1 \
+            --query 'deployments[0].containers' \
+            --output table
+          exit 1
+        fi
+        
+    - name: Deploy to Lightsail Container Service
+      run: |
+        echo "🚀 Deploying backend to Lightsail..."
+        echo "📦 Image: ${{ steps.build-image.outputs.image }}"
+        echo "🌐 Domain: orderkaro.co.in"
+        
+        # Create deployment configuration
+        cat > deployment-config.json << EOF
+        {
+          "publicEndpoint": {
+            "containerName": "backend",
+            "containerPort": 5001,
+            "healthCheck": {
+              "path": "/health",
+              "intervalSeconds": 30,
+              "timeoutSeconds": 5,
+              "healthyThreshold": 2,
+              "unhealthyThreshold": 3
+            }
+          },
+          "containers": {
+            "backend": {
+              "image": "${{ steps.build-image.outputs.image }}",
+              "ports": {
+                "5001": "HTTP"
+              },
+              "environment": {
+                "NODE_ENV": "production",
+                "PORT": "5001",
+                "CORS_ORIGIN": "https://orderkaro.co.in",
+                "FRONTEND_URL": "https://orderkaro.co.in",
+                "JWT_SECRET": "${{ secrets.JWT_SECRET }}",
+                "USE_SQLITE": "true",
+                "DB_HOST": "localhost",
+                "DB_PORT": "5432",
+                "DB_NAME": "qr_ordering_db",
+                "DB_USER": "postgres",
+                "DB_PASSWORD": "${{ secrets.DB_PASSWORD }}"
+              },
+              "command": ["npm", "start"],
+              "workingDirectory": "/app"
+            }
+          }
+        }
+        EOF
+        
+        echo "📄 Deployment configuration created"
+        
+        # Deploy with retry logic
+        RETRY_COUNT=0
+        MAX_RETRIES=3
+        
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES"
+          
+          if aws lightsail create-container-service-deployment \
+            --service-name qr-scanner-backend \
+            --cli-input-json file://deployment-config.json \
+            --region us-east-1; then
+            
+            echo "✅ Deployment initiated successfully!"
+            break
+          else
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "⚠️ Deployment failed, retrying in 30 seconds..."
+              sleep 30
+            else
+              echo "❌ Deployment failed after $MAX_RETRIES attempts"
+              exit 1
+            fi
+          fi
+        done
+        
+    - name: Monitor deployment progress
+      run: |
+        echo "📊 Monitoring deployment progress..."
+        
+        DEPLOYMENT_STATUS="PENDING"
+        TIMEOUT=600
+        ELAPSED=0
+        
+        while [ "$DEPLOYMENT_STATUS" != "ACTIVE" ] && [ "$DEPLOYMENT_STATUS" != "FAILED" ]; do
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "❌ Deployment timeout reached"
+            exit 1
+          fi
+          
+          echo "Deployment status: $DEPLOYMENT_STATUS (${ELAPSED}s/${TIMEOUT}s)"
+          sleep 30
+          ELAPSED=$((ELAPSED + 30))
+          
+          DEPLOYMENT_STATUS=$(aws lightsail get-container-service-deployments \
+            --service-name qr-scanner-backend \
+            --region us-east-1 \
+            --query 'deployments[0].state' \
+            --output text 2>/dev/null || echo "UNKNOWN")
+        done
+        
+        if [ "$DEPLOYMENT_STATUS" = "ACTIVE" ]; then
+          echo "🎉 Deployment completed successfully!"
+          
+          # Get service URL
+          SERVICE_URL=$(aws lightsail get-container-service \
+            --service-name qr-scanner-backend \
+            --region us-east-1 \
+            --query 'containerService.url' \
+            --output text)
+          
+          echo "Service URL: $SERVICE_URL"
+          echo "Testing health endpoint..."
+          
+          # Test health endpoint
+          if curl -f "$SERVICE_URL/health" > /dev/null 2>&1; then
+            echo "✅ Health check passed! Service is running correctly."
+          else
+            echo "⚠️ Health check failed. Service may still be starting up."
+          fi
+          
+        else
+          echo "❌ Deployment failed with status: $DEPLOYMENT_STATUS"
+          
+          # Get deployment logs
+          echo "Getting deployment logs..."
+          aws lightsail get-container-service-deployments \
+            --service-name qr-scanner-backend \
+            --region us-east-1 \
+            --query 'deployments[0].containers' \
+            --output table
+          
+          exit 1
+        fi
+        
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "🎉 Deployment to orderkaro.co.in completed successfully!"
+        else
+          echo "❌ Deployment failed. Check the logs above."
+        fi

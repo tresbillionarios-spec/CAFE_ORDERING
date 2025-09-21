@@ -1,198 +1,64 @@
-name: Deploy to AWS Lightsail - From Existing Config
+name: Deploy to AWS Lightsail
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
-
-env:
-  AWS_REGION: us-east-1
-  ECR_REGISTRY: 076481189581.dkr.ecr.us-east-1.amazonaws.com
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - app: frontend
-            dockerfile: frontend/Dockerfile
-            context: frontend
-            port: 80
-            service_name: qr-scanner-frontend
-            container_name: frontend
-          - app: backend
-            dockerfile: backend/Dockerfile
-            context: backend
-            port: 5001
-            service_name: qr-scanner-backend
-            container_name: backend
-
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          # Build a docker container and push it to ECR
-          docker build -t $ECR_REGISTRY/${{ matrix.service_name }}:$IMAGE_TAG -f ${{ matrix.dockerfile }} ${{ matrix.context }}
-          docker push $ECR_REGISTRY/${{ matrix.service_name }}:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/${{ matrix.service_name }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-      - name: Deploy to Lightsail
-        run: |
-          echo "🚀 Deploying ${{ matrix.app }} to Lightsail..."
-          echo "📦 Image: ${{ steps.build-image.outputs.image }}"
-          echo "🌐 Domain: orderkaro.co.in"
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies and run tests
+      run: |
+        cd backend
+        npm ci
+        # Add your tests here if you have them
+        # npm test
+        
+    - name: Deploy to AWS Lightsail
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: 13.232.219.159
+        username: ubuntu
+        key: ${{ secrets.AWS_SSH_KEY }}
+        script: |
+          # Navigate to application directory
+          cd /home/ubuntu/CAFE_Ordering
           
-          # Create deployment configuration based on existing setup
-          if [ "${{ matrix.app }}" = "frontend" ]; then
-            cat > deployment-config.json << 'EOF'
-          {
-            "publicEndpoint": {
-              "containerName": "frontend",
-              "containerPort": 80,
-              "healthCheck": {
-                "healthyThreshold": 2,
-                "unhealthyThreshold": 2,
-                "timeoutSeconds": 2,
-                "intervalSeconds": 5,
-                "path": "/health",
-                "successCodes": "200-499"
-              }
-            },
-            "containers": {
-              "frontend": {
-                "image": "${{ steps.build-image.outputs.image }}",
-                "command": [],
-                "environment": {
-                  "NODE_ENV": "production",
-                  "PORT": "80",
-                  "VITE_API_URL": "https://orderkaro.co.in/api"
-                },
-                "ports": {
-                  "80": "HTTP"
-                }
-              }
-            }
-          }
-          EOF
-          else
-            cat > deployment-config.json << 'EOF'
-          {
-            "publicEndpoint": {
-              "containerName": "backend",
-              "containerPort": 5001,
-              "healthCheck": {
-                "healthyThreshold": 2,
-                "unhealthyThreshold": 2,
-                "timeoutSeconds": 2,
-                "intervalSeconds": 5,
-                "path": "/health",
-                "successCodes": "200-499"
-              }
-            },
-            "containers": {
-              "backend": {
-                "image": "${{ steps.build-image.outputs.image }}",
-                "command": [],
-                "environment": {
-                  "NODE_ENV": "production",
-                  "PORT": "5001",
-                  "CORS_ORIGIN": "https://orderkaro.co.in",
-                  "FRONTEND_URL": "https://orderkaro.co.in",
-                  "JWT_SECRET": "your-super-secret-jwt-key",
-                  "DB_HOST": "localhost",
-                  "DB_PORT": "5432",
-                  "DB_NAME": "qr_ordering_db",
-                  "DB_USER": "postgres",
-                  "DB_PASSWORD": "password"
-                },
-                "ports": {
-                  "5001": "HTTP"
-                }
-              }
-            }
-          }
-          EOF
-          fi
+          # Pull latest changes
+          git pull origin main
           
-          echo "📄 Deployment configuration created"
-          cat deployment-config.json
+          # Install/update dependencies
+          cd backend
+          npm install --production
           
-          # Deploy the container to Lightsail using the config file
-          aws lightsail create-container-service-deployment \
-            --service-name ${{ matrix.service_name }} \
-            --cli-input-json file://deployment-config.json \
-            --region ${{ env.AWS_REGION }}
-
-      - name: Wait for deployment
-        run: |
-          echo "Waiting for ${{ matrix.service_name }} deployment to complete..."
-          # Wait for deployment to be ready
-          for i in {1..20}; do
-            STATUS=$(aws lightsail get-container-services \
-              --service-name ${{ matrix.service_name }} \
-              --query 'containerServices[0].state' \
-              --output text \
-              --region ${{ env.AWS_REGION }} 2>/dev/null || echo "PENDING")
-            
-            if [ "$STATUS" = "READY" ]; then
-              echo "✅ Deployment completed successfully"
-              break
-            else
-              echo "⏳ Waiting for deployment... ($i/20) - Status: $STATUS"
-              sleep 30
-            fi
-          done
-
-      - name: Get service URL
-        id: get-url
-        run: |
-          SERVICE_URL=$(aws lightsail get-container-services \
-            --service-name ${{ matrix.service_name }} \
-            --query 'containerServices[0].url' \
-            --output text \
-            --region ${{ env.AWS_REGION }} 2>/dev/null || echo "https://${{ matrix.service_name }}.cw27w5415mg9y.us-east-1.cs.amazonlightsail.com")
+          # Restart the application with PM2
+          pm2 restart cafe-backend
           
-          echo "Service URL: $SERVICE_URL"
-          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
-
-      - name: Health Check
-        run: |
-          SERVICE_URL="${{ steps.get-url.outputs.url }}"
-          echo "Testing health endpoint: $SERVICE_URL/health"
+          # Wait a moment for the app to start
+          sleep 5
           
-          # Wait for service to be healthy
-          for i in {1..10}; do
-            if curl -f "$SERVICE_URL/health" > /dev/null 2>&1; then
-              echo "✅ ${{ matrix.app }} service is healthy"
-              break
-            else
-              echo "⏳ Waiting for ${{ matrix.app }} service to be healthy... ($i/10)"
-              sleep 30
-            fi
-          done
-
-      - name: Display Results
-        run: |
-          echo "🎉 Deployment completed!"
-          echo "🌐 Frontend: https://qr-scanner-frontend.cw27w5415mg9y.us-east-1.cs.amazonlightsail.com/"
-          echo "🔧 Backend: https://qr-scanner-backend.cw27w5415mg9y.us-east-1.cs.amazonlightsail.com/"
-          echo "🌐 Your Domain: https://orderkaro.co.in"
-          echo "📊 API: https://orderkaro.co.in/api"
+          # Health check
+          curl -f http://localhost:5001/health || exit 1
+          
+          echo "✅ Deployment completed successfully!"
+          
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "🎉 Deployment to orderkaro.co.in completed successfully!"
+        else
+          echo "❌ Deployment failed. Check the logs above."
+        fi
