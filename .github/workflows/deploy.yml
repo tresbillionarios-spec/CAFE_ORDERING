@@ -58,38 +58,16 @@ jobs:
         run: |
           # Set environment variables for the container
           if [ "${{ matrix.app }}" = "frontend" ]; then
-            ENV_VARS='{
-              "NODE_ENV": "production",
-              "PORT": "'${{ matrix.port }}'",
-              "VITE_API_URL": "http://qr-scanner-backend:5001/api"
-            }'
+            ENV_VARS='{"NODE_ENV":"production","PORT":"'${{ matrix.port }}'","VITE_API_URL":"http://qr-scanner-backend:5001/api"}'
           else
-            ENV_VARS='{
-              "NODE_ENV": "production",
-              "PORT": "'${{ matrix.port }}'",
-              "DB_HOST": "localhost",
-              "DB_PORT": "5432",
-              "DB_NAME": "qrscanner",
-              "DB_USER": "postgres",
-              "DB_PASSWORD": "password",
-              "JWT_SECRET": "your-jwt-secret-key",
-              "CORS_ORIGIN": "https://orderkaro.co.in"
-            }'
+            ENV_VARS='{"NODE_ENV":"production","PORT":"'${{ matrix.port }}'","DB_HOST":"localhost","DB_PORT":"5432","DB_NAME":"qrscanner","DB_USER":"postgres","DB_PASSWORD":"password","JWT_SECRET":"your-jwt-secret-key","CORS_ORIGIN":"https://orderkaro.co.in"}'
           fi
           
           # Deploy the container to Lightsail
           aws lightsail create-container-service-deployment \
             --service-name ${{ matrix.service_name }} \
             --public-endpoint containerName=${{ matrix.app }},containerPort=${{ matrix.port }},healthCheckPath=/health \
-            --containers '{
-              "'${{ matrix.app }}'": {
-                "image": "'${{ steps.build-image.outputs.image }}'",
-                "ports": {
-                  "'${{ matrix.port }}'": "HTTP"
-                },
-                "environment": '$ENV_VARS'
-              }
-            }' \
+            --containers "{\"${{ matrix.app }}\":{\"image\":\"${{ steps.build-image.outputs.image }}\",\"ports\":{\"${{ matrix.port }}\":\"HTTP\"},\"environment\":$ENV_VARS}}" \
             --region ${{ env.AWS_REGION }}
 
       - name: Wait for deployment
