@@ -134,7 +134,7 @@ aws lightsail create-distribution \
 
 ### Deploy Frontend
 ```bash
-# Deploy frontend container
+# Deploy frontend container with internal API configuration
 aws lightsail put-container-service-deployment \
   --service-name qr-scanner-frontend \
   --public-endpoint containerName=frontend,containerPort=80,healthCheckPath=/ \
@@ -146,7 +146,8 @@ aws lightsail put-container-service-deployment \
       },
       "environment": {
         "NODE_ENV": "production",
-        "PORT": "80"
+        "PORT": "80",
+        "VITE_API_URL": "http://qr-scanner-backend:5001/api"
       }
     }
   }' \

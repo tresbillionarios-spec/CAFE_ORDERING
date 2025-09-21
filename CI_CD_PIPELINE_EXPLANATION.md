@@ -184,6 +184,21 @@ Lightsail Load Balancer (SSL Termination)
 └─────────────────┴─────────────────┘
 ```
 
+### **Internal API Communication**
+```
+Frontend Container
+    ↓ (Internal API call)
+Backend Container
+    ↓ (Database)
+PostgreSQL Database
+```
+
+**Key Benefits:**
+- **Faster API calls** (no external network)
+- **More secure** (internal network only)
+- **Lower latency** (direct container communication)
+- **Cost effective** (no external bandwidth usage)
+
 ### **Domain Mapping**
 - **Frontend**: `https://orderkaro.co.in` → Load Balancer → Frontend Container (Port 80)
 - **Backend**: `https://api.orderkaro.co.in` → Load Balancer → Backend Container (Port 5001)
@@ -202,7 +217,7 @@ Lightsail Load Balancer (SSL Termination)
 environment:
   NODE_ENV: production
   PORT: 80
-  VITE_API_URL: https://api.orderkaro.co.in/api
+  VITE_API_URL: http://qr-scanner-backend:5001/api  # Internal API call
 ```
 
 ### **Backend Container**
