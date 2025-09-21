@@ -78,15 +78,15 @@ aws lightsail attach-instances-to-load-balancer \
 ```bash
 # Request SSL certificate for frontend domain
 aws lightsail create-certificate \
-  --certificate-name orders-mycafe-com-cert \
-  --domain-name orders.mycafe.com \
-  --subject-alternative-names orders.mycafe.com \
+  --certificate-name orderkaro-co-in-cert \
+  --domain-name orderkaro.co.in \
+  --subject-alternative-names orderkaro.co.in \
   --region us-east-1
 
 # Attach certificate to load balancer
 aws lightsail attach-certificate-to-distribution \
   --distribution-name qr-scanner-lb \
-  --certificate-name orders-mycafe-com-cert \
+  --certificate-name orderkaro-co-in-cert \
   --region us-east-1
 ```
 
@@ -94,15 +94,15 @@ aws lightsail attach-certificate-to-distribution \
 ```bash
 # Request SSL certificate for backend domain
 aws lightsail create-certificate \
-  --certificate-name api-mycafe-com-cert \
-  --domain-name api.mycafe.com \
-  --subject-alternative-names api.mycafe.com \
+  --certificate-name api-orderkaro-co-in-cert \
+  --domain-name api.orderkaro.co.in \
+  --subject-alternative-names api.orderkaro.co.in \
   --region us-east-1
 
 # Attach certificate to load balancer
 aws lightsail attach-certificate-to-distribution \
   --distribution-name qr-scanner-lb \
-  --certificate-name api-mycafe-com-cert \
+  --certificate-name api-orderkaro-co-in-cert \
   --region us-east-1
 ```
 
@@ -184,19 +184,19 @@ After setup, configure your DNS records:
 
 ```
 # A records pointing to Lightsail load balancer
-orders.mycafe.com    A    <lightsail-lb-ip>
-api.mycafe.com       A    <lightsail-lb-ip>
+orderkaro.co.in       A    <lightsail-lb-ip>
+api.orderkaro.co.in   A    <lightsail-lb-ip>
 
 # CNAME records for SSL validation
-_validation.orders.mycafe.com    CNAME    <ssl-validation-record>
-_validation.api.mycafe.com       CNAME    <ssl-validation-record>
+_validation.orderkaro.co.in       CNAME    <ssl-validation-record>
+_validation.api.orderkaro.co.in   CNAME    <ssl-validation-record>
 ```
 
 ## 8. Health Check Endpoints
 
-- **Frontend**: `https://orders.mycafe.com/` (serves React app)
-- **Backend**: `https://api.mycafe.com/health` (API health check)
-- **Backend API**: `https://api.mycafe.com/api/*` (all API endpoints)
+- **Frontend**: `https://orderkaro.co.in/` (serves React app)
+- **Backend**: `https://api.orderkaro.co.in/health` (API health check)
+- **Backend API**: `https://api.orderkaro.co.in/api/*` (all API endpoints)
 
 ## 9. Monitoring and Logs
 

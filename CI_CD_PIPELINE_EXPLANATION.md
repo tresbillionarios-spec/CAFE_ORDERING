@@ -180,13 +180,13 @@ Lightsail Load Balancer (SSL Termination)
 ┌─────────────────┬─────────────────┐
 │   Frontend      │    Backend      │
 │   Port: 80      │   Port: 5001   │
-│   orders.mycafe.com │ api.mycafe.com │
+│   orderkaro.co.in │ api.orderkaro.co.in │
 └─────────────────┴─────────────────┘
 ```
 
 ### **Domain Mapping**
-- **Frontend**: `https://orders.mycafe.com` → Load Balancer → Frontend Container (Port 80)
-- **Backend**: `https://api.mycafe.com` → Load Balancer → Backend Container (Port 5001)
+- **Frontend**: `https://orderkaro.co.in` → Load Balancer → Frontend Container (Port 80)
+- **Backend**: `https://api.orderkaro.co.in` → Load Balancer → Backend Container (Port 5001)
 
 ### **SSL Certificate Flow**
 1. **Certificate Request**: AWS Lightsail requests SSL certificate from Let's Encrypt
@@ -202,7 +202,7 @@ Lightsail Load Balancer (SSL Termination)
 environment:
   NODE_ENV: production
   PORT: 80
-  VITE_API_URL: https://api.mycafe.com/api
+  VITE_API_URL: https://api.orderkaro.co.in/api
 ```
 
 ### **Backend Container**
@@ -215,7 +215,7 @@ environment:
   DB_PASS: your-db-password
   DB_NAME: qr_ordering_db
   JWT_SECRET: your-jwt-secret
-  CORS_ORIGIN: https://orders.mycafe.com
+  CORS_ORIGIN: https://orderkaro.co.in
 ```
 
 ## 🚀 Deployment Process
@@ -238,8 +238,8 @@ If deployment fails:
 ## 📊 Monitoring and Logs
 
 ### **Health Check Endpoints**
-- **Frontend**: `https://orders.mycafe.com/` (React app)
-- **Backend**: `https://api.mycafe.com/health` (API health check)
+- **Frontend**: `https://orderkaro.co.in/` (React app)
+- **Backend**: `https://api.orderkaro.co.in/health` (API health check)
 
 ### **Lightsail Monitoring**
 - **Container Logs**: Available in Lightsail console

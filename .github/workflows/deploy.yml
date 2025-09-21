@@ -24,13 +24,13 @@ jobs:
             context: frontend
             port: 80
             service_name: qr-scanner-frontend
-            domain: orders.mycafe.com
+            domain: orderkaro.co.in
           - app: backend
             dockerfile: backend/Dockerfile
             context: backend
             port: 5001
             service_name: qr-scanner-backend
-            domain: api.mycafe.com
+            domain: api.orderkaro.co.in
 
     steps:
       - name: Checkout code
