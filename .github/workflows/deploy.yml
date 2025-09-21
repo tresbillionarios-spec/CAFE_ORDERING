@@ -169,9 +169,21 @@ jobs:
             fi
           done
 
-      - name: Configure Domain (Frontend only)
+      - name: Configure Custom Domain
         if: matrix.app == 'frontend'
         run: |
-          echo "🌐 Frontend will be available at: https://${{ matrix.domain }}"
-          echo "🔧 Backend API will be available at: https://${{ matrix.domain }}/api"
-          echo "📊 Health check: https://${{ matrix.domain }}/health"
+          # Create SSL certificate for orderkaro.co.in
+          aws lightsail create-certificate \
+            --certificate-name orderkaro-co-in-cert \
+            --domain-name orderkaro.co.in \
+            --region ${{ env.AWS_REGION }} || echo "Certificate may already exist"
+          
+          echo "🌐 Frontend will be available at: https://orderkaro.co.in"
+          echo "🔧 Backend API will be available at: https://api.orderkaro.co.in"
+          echo "📊 Health check: https://orderkaro.co.in/health"
+          echo ""
+          echo "📋 DNS Configuration Required:"
+          echo "Add these DNS records to your orderkaro.co.in domain:"
+          echo "1. A Record: @ → [Load Balancer IP]"
+          echo "2. CNAME Record: api → [Load Balancer DNS]"
+          echo "3. CNAME Record: www → orderkaro.co.in"
