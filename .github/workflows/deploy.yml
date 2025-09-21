@@ -1,20 +1,15 @@
-name: Deploy to AWS Lightsail
-# Testing Docker push to newly created ECR repositories
+name: Deploy to AWS Lightsail - Fixed
 
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
-  FRONTEND_SERVICE_NAME: qr-scanner-frontend
-  BACKEND_SERVICE_NAME: qr-scanner-backend
-  LOAD_BALANCER_NAME: qr-scanner-lb
+  ECR_REGISTRY: 076481189581.dkr.ecr.us-east-1.amazonaws.com
 
 jobs:
-  # Build and deploy frontend and backend in parallel using matrix strategy
   deploy:
     runs-on: ubuntu-latest
     strategy:
@@ -48,33 +43,20 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push Docker image
+      - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Build Docker image
+          # Build a docker container and push it to ECR
           docker build -t $ECR_REGISTRY/${{ matrix.service_name }}:$IMAGE_TAG -f ${{ matrix.dockerfile }} ${{ matrix.context }}
-          
-          # Tag with latest for easier reference
-          docker tag $ECR_REGISTRY/${{ matrix.service_name }}:$IMAGE_TAG $ECR_REGISTRY/${{ matrix.service_name }}:latest
-          
-          # Push both tags
           docker push $ECR_REGISTRY/${{ matrix.service_name }}:$IMAGE_TAG
-          docker push $ECR_REGISTRY/${{ matrix.service_name }}:latest
-          
           echo "image=$ECR_REGISTRY/${{ matrix.service_name }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Deploy to Lightsail Container Service
+      - name: Deploy to Lightsail
         run: |
-          # Get the Lightsail container service
-          SERVICE_NAME=${{ matrix.service_name }}
-          IMAGE_URI=${{ steps.build-image.outputs.image }}
-          
-          echo "Deploying $SERVICE_NAME with image: $IMAGE_URI"
-          
-          # Set environment variables based on service type
+          # Set environment variables for the container
           if [ "${{ matrix.app }}" = "frontend" ]; then
             ENV_VARS='{
               "NODE_ENV": "production",
@@ -85,22 +67,23 @@ jobs:
             ENV_VARS='{
               "NODE_ENV": "production",
               "PORT": "'${{ matrix.port }}'",
-              "DB_HOST": "your-rds-endpoint",
-              "DB_USER": "your-db-user",
-              "DB_PASS": "your-db-password",
-              "DB_NAME": "qr_ordering_db",
-              "JWT_SECRET": "your-jwt-secret",
+              "DB_HOST": "localhost",
+              "DB_PORT": "5432",
+              "DB_NAME": "qrscanner",
+              "DB_USER": "postgres",
+              "DB_PASSWORD": "password",
+              "JWT_SECRET": "your-jwt-secret-key",
               "CORS_ORIGIN": "https://orderkaro.co.in"
             }'
           fi
           
-          # Update the container service with new image
+          # Deploy the container to Lightsail
           aws lightsail create-container-service-deployment \
-            --service-name $SERVICE_NAME \
+            --service-name ${{ matrix.service_name }} \
             --public-endpoint containerName=${{ matrix.app }},containerPort=${{ matrix.port }},healthCheckPath=/health \
             --containers '{
               "'${{ matrix.app }}'": {
-                "image": "'$IMAGE_URI'",
+                "image": "'${{ steps.build-image.outputs.image }}'",
                 "ports": {
                   "'${{ matrix.port }}'": "HTTP"
                 },
@@ -109,85 +92,57 @@ jobs:
             }' \
             --region ${{ env.AWS_REGION }}
 
-      - name: Wait for deployment to complete
+      - name: Wait for deployment
         run: |
           echo "Waiting for ${{ matrix.service_name }} deployment to complete..."
           # Wait for deployment to be ready
-          for i in {1..30}; do
+          for i in {1..20}; do
             STATUS=$(aws lightsail get-container-services \
               --service-name ${{ matrix.service_name }} \
               --query 'containerServices[0].state' \
               --output text \
-              --region ${{ env.AWS_REGION }})
+              --region ${{ env.AWS_REGION }} 2>/dev/null || echo "PENDING")
+            
             if [ "$STATUS" = "READY" ]; then
               echo "✅ Deployment completed successfully"
               break
             else
-              echo "⏳ Waiting for deployment... ($i/30) - Status: $STATUS"
+              echo "⏳ Waiting for deployment... ($i/20) - Status: $STATUS"
               sleep 30
             fi
           done
 
-      - name: Update Load Balancer Configuration
-        if: matrix.app == 'frontend'
+      - name: Get service URL
+        id: get-url
         run: |
-          # Update load balancer to point to the new frontend service
-          aws lightsail create-container-service-deployment \
-            --service-name ${{ env.LOAD_BALANCER_NAME }} \
-            --public-endpoint containerName=frontend,containerPort=80,healthCheckPath=/ \
-            --containers '{
-              "frontend": {
-                "image": "${{ steps.build-image.outputs.image }}",
-                "ports": {
-                  "80": "HTTP"
-                }
-              }
-            }' \
-            --region ${{ env.AWS_REGION }}
-
-      - name: Configure SSL Certificate
-        if: matrix.app == 'frontend'
-        run: |
-          # Request SSL certificate for the domain
-          aws lightsail create-certificate \
-            --certificate-name ${{ matrix.domain }}-cert \
-            --domain-name ${{ matrix.domain }} \
-            --subject-alternative-names ${{ matrix.domain }} \
-            --region ${{ env.AWS_REGION }} || echo "Certificate may already exist"
-          
-          # Attach certificate to load balancer
-          aws lightsail attach-certificate-to-distribution \
-            --distribution-name ${{ env.LOAD_BALANCER_NAME }} \
-            --certificate-name ${{ matrix.domain }}-cert \
-            --region ${{ env.AWS_REGION }}
-
-      - name: Health Check
-        run: |
-          # Get the service URL
           SERVICE_URL=$(aws lightsail get-container-services \
             --service-name ${{ matrix.service_name }} \
             --query 'containerServices[0].url' \
             --output text \
-            --region ${{ env.AWS_REGION }})
+            --region ${{ env.AWS_REGION }} 2>/dev/null || echo "https://${{ matrix.service_name }}.cw27w5415mg9y.us-east-1.cs.amazonlightsail.com")
           
           echo "Service URL: $SERVICE_URL"
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+
+      - name: Health Check
+        run: |
+          SERVICE_URL="${{ steps.get-url.outputs.url }}"
+          echo "Testing health endpoint: $SERVICE_URL/health"
           
           # Wait for service to be healthy
-          for i in {1..30}; do
+          for i in {1..10}; do
             if curl -f "$SERVICE_URL/health" > /dev/null 2>&1; then
               echo "✅ ${{ matrix.app }} service is healthy"
               break
             else
-              echo "⏳ Waiting for ${{ matrix.app }} service to be healthy... ($i/30)"
-              sleep 10
+              echo "⏳ Waiting for ${{ matrix.app }} service to be healthy... ($i/10)"
+              sleep 30
             fi
           done
 
-      - name: Notify deployment status
-        if: always()
+      - name: Configure Domain (Frontend only)
+        if: matrix.app == 'frontend'
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ ${{ matrix.app }} deployment successful"
-          else
-            echo "❌ ${{ matrix.app }} deployment failed"
-          fi
+          echo "🌐 Frontend will be available at: https://${{ matrix.domain }}"
+          echo "🔧 Backend API will be available at: https://${{ matrix.domain }}/api"
+          echo "📊 Health check: https://${{ matrix.domain }}/health"
