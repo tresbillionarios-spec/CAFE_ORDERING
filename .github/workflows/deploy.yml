@@ -1,5 +1,5 @@
 name: Deploy to AWS Lightsail
-# Testing Docker push to existing registries
+# Testing Docker push to newly created ECR repositories
 
 on:
   push:
