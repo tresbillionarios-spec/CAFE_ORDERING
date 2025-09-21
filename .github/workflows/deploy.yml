@@ -1,5 +1,5 @@
 name: Deploy to AWS Lightsail
-# Testing credentials fix
+# Testing Docker push to existing registries
 
 on:
   push:
