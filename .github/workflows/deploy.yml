@@ -56,6 +56,10 @@ jobs:
 
       - name: Deploy to Lightsail
         run: |
+          echo "🚀 Deploying ${{ matrix.app }} to Lightsail..."
+          echo "📦 Image: ${{ steps.build-image.outputs.image }}"
+          echo "🌐 Domain: orderkaro.co.in"
+          
           # Create deployment configuration file
           if [ "${{ matrix.app }}" = "frontend" ]; then
             cat > deployment-config.json << EOF
@@ -115,6 +119,9 @@ jobs:
           }
           EOF
           fi
+          
+          echo "📄 Deployment configuration created"
+          cat deployment-config.json
           
           # Deploy the container to Lightsail using the config file
           aws lightsail create-container-service-deployment \
