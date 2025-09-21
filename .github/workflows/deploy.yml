@@ -59,7 +59,7 @@ jobs:
           # Deploy the container to Lightsail with minimal configuration
           aws lightsail create-container-service-deployment \
             --service-name ${{ matrix.service_name }} \
-            --public-endpoint containerName=${{ matrix.app }},containerPort=${{ matrix.port }},healthCheck.path=/health \
+            --public-endpoint "{\"containerName\":\"${{ matrix.app }}\",\"containerPort\":${{ matrix.port }},\"healthCheck\":{\"path\":\"/health\"}}" \
             --containers "{\"${{ matrix.app }}\":{\"image\":\"${{ steps.build-image.outputs.image }}\",\"ports\":{\"${{ matrix.port }}\":\"HTTP\"}}}" \
             --region ${{ env.AWS_REGION }}
 
